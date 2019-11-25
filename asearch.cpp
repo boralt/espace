@@ -3,9 +3,12 @@
 #include <string.h>
 #include <stdio.h>
 #include <stack>
+#include <unordered_set>
+#include <string>
 
 using namespace std;
 
+std::unordered_set<std::string> visited; 
 
 #define NUM_CHANNELS  4
 #define NUM_TRAFFIC_CLASSES  8
@@ -109,6 +112,24 @@ public:
       
       CalcCost(false);
    }
+
+    std::string ToStr()
+    {
+        std::string s;
+        char sz[100];
+        for(int ch=0; ch < NUM_CHANNELS; ch++)
+        {
+            sprintf(sz, "%d[", ch);
+            s+= sz;
+            for(int f=0; f < NUM_FEC; f++)
+            {
+                sprintf(sz, "%d:%d", f, bc[ch][f]);
+                s+= sz;
+            }
+            s+="]";
+        }
+        return s;
+    }
 
    bool IsAllAllocated()
    {
@@ -286,9 +307,38 @@ public:
       }
       changed_ch = 0;
       changed_fec = 0;
-      visited = false;
+      
    }
 
+
+    std::string ToStr()
+    {
+        if(!save_str.empty())
+            return save_str;
+
+        std::string s;
+        char sz[100];
+        
+        for(int t = 0; t < NUM_TRAFFIC_CLASSES; t++)
+        {
+            sprintf(sz, "%d:{", t );
+            s += sz;
+            s += tcs[t].ToStr();
+            s += "}";
+        }
+        save_str = s;
+        return save_str;
+    }
+
+    bool IsVisited()
+    {
+        return visited.count(ToStr()) > 0;
+    }
+
+    void SetVisited()
+    {
+        visited.insert(ToStr());
+    }
 
    int GetUncomplited()
    {
@@ -343,7 +393,7 @@ public:
             for(int fec = 0; fec < NUM_FEC; fec++)
             {
                Node *pNode = new Node(*this);
-               pNode->visited = false;
+               pNode->save_str = "";
                pNode->AllocateChunk(tc, try_chunk, ch, fec);  
                st.push(pNode);
                n++;
@@ -384,6 +434,7 @@ public:
       changed_ch = ch;
       changed_fec = fec;
       changed_tc = tc;
+      save_str = "";
    }
 
    int GetCost()
@@ -405,7 +456,8 @@ public:
    int changed_ch;
    int changed_fec;
    int changed_tc;
-   bool visited;
+    //bool visited;
+    std::string save_str;
    
 };
 
@@ -481,15 +533,15 @@ void Algorithm()
       loop++;
       if(loop % 1000 == 0)
       {
-          printf("Loop %d Size=%d cost=%d recent=%d leafes=%d\n", loop, (int) st.size(), min_cost, recent_cost, leafs_reached);
+          printf("Loop %d Size=%d cost=%d recent=%d leafes=%d visited=%d\n", loop, (int) st.size(), min_cost, recent_cost, leafs_reached, visited.size());
           recent_cost = 0;
           
       }
       Node *pNext = st.top();
       st.pop();
-      if (!pNext->visited)
+      if (!pNext->IsVisited())
       {
-         pNext->visited = true;
+          pNext->SetVisited();
          int newCount = pNext->PopulateNeighbours(st);
          if (newCount == 0)
              leafs_reached++;
