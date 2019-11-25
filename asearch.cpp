@@ -20,9 +20,27 @@ int FecDiv[NUM_FEC] = { 1, 2, 3 };
 
    
 // traffic requirements
-int T[NUM_TRAFFIC_CLASSES] = {
+int Treq[NUM_TRAFFIC_CLASSES] = {
    5000, 6000, 7000, 8000, 9000, 10000, 11000, 12000
 };
+
+int tcJitterCost[NUM_TRAFFIC_CLASSES] =
+{
+   10,9,8,7,6,5,4,3,2
+};
+
+
+int tcLatencyCost[NUM_TRAFFIC_CLASSES] =
+{
+
+   10,9,8,7,6,5,4,3,2
+}
+
+int tcDropCost[tNUM_TRAFFIC_CLASSES] =
+{
+   10,9,8,7,6,5,4,3,2
+}
+
 
 // latency
 int L(int channel)
@@ -58,14 +76,45 @@ int B(int channel)
 class  T
 {
 public:
-   T(int nTotalBw, int _tc) : tc(_tc) {
+
+   T()
+   {
+      memset(bc, 0, sizeof(bc));
+      tc = 0;
+   }
+   
+   void init(int nTotalBw, int _tc)
+   {
+      tc = _tc;
       memset(bc, 0, sizeof(bc));
       bc[0][0] = nTotalBw;
-      drop = 
+      drop = 0;
+      latency = 0;
+      jitter = 0;
+      cost = 0;
       
       CalcCost();
    }
 
+   bool IsAllAllocated()
+   {
+      return bc[0][0] == 0;
+   }
+
+   void AllocateChunk(int chunk, int ch, int fec)
+   {
+      if (!bc[0][0])
+         return; // nothing to do
+
+      if (chunk > bc[0][0])
+         chunk = bc[0][0];
+
+      b[ch][fec] += chunk;
+      bc[0][0] -= chunk;
+      CalcCost(true);
+
+   }
+   
    int B(int c)
    {
       int nTotal;
@@ -82,8 +131,16 @@ public:
 
    
    
-   int CalcCost()
+   int CalcCost(bool force)
    {
+      if(force)
+      {
+         cost = 0;
+         drop = 0;
+         jitter = 0;
+         latency = 0;
+      }
+      
       if (cost)
          return cost;
       
@@ -115,14 +172,15 @@ public:
                int d = D(c);
                d /= FecDiv[f];
                if (d > 0)
-                  drop += (bc[c][f] / 1000)*d
+                  drop += (bc[c][f] / 1000)*d;
+            }
                      
          }
       }
       return drop;
    }
 
-
+      
 
    
    int CalcLatency()
@@ -199,7 +257,56 @@ public:
    int tc;
    int latency;
    int jitter;
+   int drop;
 };
+
+class Node
+{
+public:
+   Node()
+   {
+      cost = 0;
+      for(t = 0; t < NUM_TRAFFIC_CLASSES; t++)
+      {
+         tcs[t].Init(TReq[t], t);
+      }
+   }
+
+   int tc GetUncomplited()
+   {
+      for(t=0;t < NUM_TRAFFIC_CLASSES; t++)
+      {
+         if (!tcs[t].IsAllAllocated())
+            return t;
+      }
+      return -1;
+   }
+
+
+   void AllocateChunk(int tc, int chunk,  int ch, int fec)
+   {
+      tcs[tc].AllocateChunk(chunk, ch, fec);
+   }
+
+   int GetCost()
+   {
+      if(cost)
+         return cost;
+      
+      int cost = 0;
+      for(t=0;t < NUM_TRAFFIC_CLASSES; t++)
+      {
+         cost += tcs[t].CalcCost(); 
+      }
+      
+      return cost;
+   }
+   
+   T tcs[NUM_TRAFFIC_CLASSES];
+   int cost = 0;
+
+};
+
 
 // latency of Traffic
 int LC(T t)
