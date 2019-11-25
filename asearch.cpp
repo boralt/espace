@@ -1,10 +1,14 @@
 
 
 #include <stdio.h>
+#include <stack>
 
-#define NUM_CHANNELS = 4
-#define NUM_TRAFFIC_CLASSES = 8
-#define NUM_FEC = 3
+using namespace std;
+
+
+#define NUM_CHANNELS  4
+#define NUM_TRAFFIC_CLASSES  8
+#define NUM_FEC  3
 
 // channel 0 is unallocated
 
@@ -16,8 +20,11 @@ int DoC[NUM_CHANNELS] = {1000, 1, 2, 3};
 int FecMult[NUM_FEC] = { 100, 110, 150};
 int FecDiv[NUM_FEC] = { 1, 2, 3 };
    
-#define FEC_DIVIDER = 100
+#define FEC_DIVIDER  100
 
+int min_cost = 0;
+class Node;
+Node *pMinCostNode = 0;
    
 // traffic requirements
 int Treq[NUM_TRAFFIC_CLASSES] = {
@@ -26,22 +33,24 @@ int Treq[NUM_TRAFFIC_CLASSES] = {
 
 int tcJitterCost[NUM_TRAFFIC_CLASSES] =
 {
-   10,9,8,7,6,5,4,3,2
+   9,8,7,6,5,4,3,2
 };
 
 
 int tcLatencyCost[NUM_TRAFFIC_CLASSES] =
 {
 
-   10,9,8,7,6,5,4,3,2
-}
+   9,8,7,6,5,4,3,2
+};
 
-int tcDropCost[tNUM_TRAFFIC_CLASSES] =
+int tcDropCost[NUM_TRAFFIC_CLASSES] =
 {
-   10,9,8,7,6,5,4,3,2
-}
+   9,8,7,6,5,4,3,2
+};
 
+int try_chunk = 1000;
 
+   
 // latency
 int L(int channel)
 {
@@ -63,13 +72,13 @@ int J(int channel)
 // drop
 int D(int channel)
 {
-   return DofC[channel]; 
+   return DoC[channel]; 
 }
 
 // bw
 int B(int channel)
 {
-   return BofC[channel]; 
+   return BoC[channel]; 
 }
 
 
@@ -86,14 +95,14 @@ public:
    void init(int nTotalBw, int _tc)
    {
       tc = _tc;
-      memset(bc, 0, sizeof(bc));
+      // memset(bc, 0, sizeof(bc));
       bc[0][0] = nTotalBw;
       drop = 0;
       latency = 0;
       jitter = 0;
       cost = 0;
       
-      CalcCost();
+      CalcCost(false);
    }
 
    bool IsAllAllocated()
@@ -109,7 +118,7 @@ public:
       if (chunk > bc[0][0])
          chunk = bc[0][0];
 
-      b[ch][fec] += chunk;
+      bc[ch][fec] += chunk;
       bc[0][0] -= chunk;
       CalcCost(true);
 
@@ -163,9 +172,9 @@ public:
       if (bc[0][0])
          drop += bc[0][0];
       
-      for (c=1; c<NUM_CHANNELS; c++)
+      for (int c=1; c<NUM_CHANNELS; c++)
       {
-         for (f=0; f < NUM_FEC; f++)
+         for (int f=0; f < NUM_FEC; f++)
          {
             if(bc[c][f])
             {
@@ -190,9 +199,9 @@ public:
 
       int maxLatency = 0;
       
-      for (c=0; c<NUM_CHANNELS; c++)
+      for (int c=0; c<NUM_CHANNELS; c++)
       {
-         for (f=0; f < NUM_FEC; f++)
+         for (int f=0; f < NUM_FEC; f++)
          {
             if(bc[c][f])
             {
@@ -201,9 +210,9 @@ public:
                d /= FecDiv[f];
                if (d > 0)
                   l *= 2;
+               if (maxLatency < l)
+                  maxLatency = l;
             }
-            if (maxLatency < l)
-               maxLatency = l;
          }
       }
       latency = maxLatency;
@@ -220,9 +229,9 @@ public:
       int jitterOnMax = 0;
       int jitterOnMin = 0;
       
-      for (c=0; c<NUM_CHANNELS; c++)
+      for (int c=0; c<NUM_CHANNELS; c++)
       {
-         for (f=0; f < NUM_FEC; f++)
+         for (int f=0; f < NUM_FEC; f++)
          {
             if(bc[c][f])
             {
@@ -231,16 +240,16 @@ public:
                d /= FecDiv[f];
                if (d > 0)
                   l *= 2;
-            }
-            if (maxLatency < l)
-            {
-               maxLatency = l;
-               jitterOnMax = J(c);
-            }
-            if (minLatency ==0 || minLatency > l)
-            {
-               minLatency = l;
-               jitterOnMin = J(c);
+               if (maxLatency < l)
+               {
+                  maxLatency = l;
+                  jitterOnMax = J(c);
+               }
+               if (minLatency ==0 || minLatency > l)
+               {
+                  minLatency = l;
+                  jitterOnMin = J(c);
+               }
             }
          }
       }
@@ -266,15 +275,19 @@ public:
    Node()
    {
       cost = 0;
-      for(t = 0; t < NUM_TRAFFIC_CLASSES; t++)
+      for(int t = 0; t < NUM_TRAFFIC_CLASSES; t++)
       {
-         tcs[t].Init(TReq[t], t);
+         tcs[t].init(Treq[t], t);
       }
+      changed_ch = 0;
+      changed_fec = 0;
+      visited = false;
    }
 
-   int tc GetUncomplited()
+
+   int GetUncomplited()
    {
-      for(t=0;t < NUM_TRAFFIC_CLASSES; t++)
+      for(int t=0;t < NUM_TRAFFIC_CLASSES; t++)
       {
          if (!tcs[t].IsAllAllocated())
             return t;
@@ -282,10 +295,85 @@ public:
       return -1;
    }
 
+   Node *GetNextDescendent(Node *prevDescendent)
+   {
 
+      int prev_ch = prevDescendent->changed_ch;
+      int prev_fec = prevDescendent->changed_fec;
+      int prev_tc = prevDescendent->changed_tc;
+      if(prev_fec < (NUM_FEC-1))
+      {
+         Node *pNextNode = new Node(*this);
+         pNextNode->AllocateChunk(prev_tc, try_chunk, prev_ch, prev_fec+1);
+         return pNextNode;
+      }
+      else if( prev_ch < (NUM_CHANNELS-1))
+      {
+         Node *pNextNode = new Node(*this);
+         pNextNode->AllocateChunk(prev_tc, try_chunk, prev_ch+1, 0);
+         return pNextNode;
+         
+      }
+      else if(prev_tc < (NUM_TRAFFIC_CLASSES-1))
+      {
+         Node *pNextNode = new Node(*this);
+         pNextNode->AllocateChunk(prev_tc+1, try_chunk, 1, 0);
+         return pNextNode;
+      }
+      return 0;
+      
+   }
+
+   int PopulateNeighbours(stack<Node *> st)
+   {
+
+      int tc = GetUncomplited();
+      int n = 0;
+      if (tc >=0)
+      {
+         for(int ch = 1; ch < NUM_CHANNELS; ch++)
+         {
+            if(ChFull(ch))
+               continue;
+            for(int fec = 0; fec < NUM_FEC; fec++)
+            {
+               Node *pNode = new Node(*this);
+               pNode->AllocateChunk(tc, try_chunk, ch, fec);  
+               st.push(pNode);
+               n++;
+            }
+         }
+      }
+      GetCost();
+      if (min_cost ==0 || cost < min_cost)
+      {
+         min_cost = cost;
+         if (pMinCostNode)
+            delete pMinCostNode;
+         pMinCostNode = new Node(*this);
+      }
+      return n;
+   }
+
+   bool ChFull(int ch)
+   {
+      int chBw = 0;
+      
+      for(int tc=0; tc < NUM_TRAFFIC_CLASSES; tc++)
+      {
+         chBw += tcs[tc].B(ch);
+      }
+
+      return chBw >= BoC[ch];
+   }
+   
+   
    void AllocateChunk(int tc, int chunk,  int ch, int fec)
    {
       tcs[tc].AllocateChunk(chunk, ch, fec);
+      changed_ch = ch;
+      changed_fec = fec;
+      changed_tc = tc;
    }
 
    int GetCost()
@@ -294,17 +382,21 @@ public:
          return cost;
       
       int cost = 0;
-      for(t=0;t < NUM_TRAFFIC_CLASSES; t++)
+      for(int t=0;t < NUM_TRAFFIC_CLASSES; t++)
       {
-         cost += tcs[t].CalcCost(); 
+         cost += tcs[t].CalcCost(false); 
       }
       
       return cost;
    }
    
    T tcs[NUM_TRAFFIC_CLASSES];
-   int cost = 0;
-
+   int cost;
+   int changed_ch;
+   int changed_fec;
+   int changed_tc;
+   bool visited;
+   
 };
 
 
@@ -328,7 +420,7 @@ int LC(T t)
 int LD(T t)
 {
    int totalD = 0;
-   int nChannels++;
+   int nChannels=0;
    for (int c=0; c<NUM_CHANNELS; c++)
    {
       int d = D(c);
@@ -358,7 +450,7 @@ int JC(T t)
          int j = J(c);
          if (j > maxJ)
             maxJ = j;
-         if (minL =0 || minL > l)
+         if (minL == 0 || minL > l)
             minL = l;
          if (maxL < l)
             maxL = l;
@@ -368,12 +460,38 @@ int JC(T t)
    return maxL-minL + maxJ;;
 }
 
-class Node
+void Algorithm()
 {
-public Node();
+   Node *head = new Node;
+   stack<Node *> st;
+   st.push(head);
+   int loop = 0;
+   while(!st.empty())
+   {
+      loop++;
+      if(loop % 100 == 0)
+      {
+         printf("Loop %d Size=%d", loop, (int) st.size());
+      }
+      Node *pNext = st.top();
+      st.pop();
+      if (!pNext->visited)
+      {
+         pNext->visited = true;
+         pNext->PopulateNeighbours(st);
+         delete pNext;
+      }
+   }
+}
 
 
-};
+int main(int, char **)
+{
+   Algorithm();
+   printf("Cost = %d", min_cost);
+   return 0;
+}
+
 
 
 
