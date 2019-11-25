@@ -1,5 +1,6 @@
 
-
+#include <stdlib.h>
+#include <string.h>
 #include <stdio.h>
 #include <stack>
 
@@ -23,6 +24,10 @@ int FecDiv[NUM_FEC] = { 1, 2, 3 };
 #define FEC_DIVIDER  100
 
 int min_cost = 0;
+int recent_cost = 0;
+int leafs_reached = 0;
+
+
 class Node;
 Node *pMinCostNode = 0;
    
@@ -324,7 +329,7 @@ public:
       
    }
 
-   int PopulateNeighbours(stack<Node *> st)
+   int PopulateNeighbours(stack<Node *> &st)
    {
 
       int tc = GetUncomplited();
@@ -338,6 +343,7 @@ public:
             for(int fec = 0; fec < NUM_FEC; fec++)
             {
                Node *pNode = new Node(*this);
+               pNode->visited = false;
                pNode->AllocateChunk(tc, try_chunk, ch, fec);  
                st.push(pNode);
                n++;
@@ -352,6 +358,10 @@ public:
             delete pMinCostNode;
          pMinCostNode = new Node(*this);
       }
+
+      if(recent_cost == 0 || cost < recent_cost)
+          recent_cost = cost;
+
       return n;
    }
 
@@ -381,7 +391,7 @@ public:
       if(cost)
          return cost;
       
-      int cost = 0;
+      cost = 0;
       for(int t=0;t < NUM_TRAFFIC_CLASSES; t++)
       {
          cost += tcs[t].CalcCost(false); 
@@ -469,16 +479,20 @@ void Algorithm()
    while(!st.empty())
    {
       loop++;
-      if(loop % 100 == 0)
+      if(loop % 1000 == 0)
       {
-         printf("Loop %d Size=%d", loop, (int) st.size());
+          printf("Loop %d Size=%d cost=%d recent=%d leafes=%d\n", loop, (int) st.size(), min_cost, recent_cost, leafs_reached);
+          recent_cost = 0;
+          
       }
       Node *pNext = st.top();
       st.pop();
       if (!pNext->visited)
       {
          pNext->visited = true;
-         pNext->PopulateNeighbours(st);
+         int newCount = pNext->PopulateNeighbours(st);
+         if (newCount == 0)
+             leafs_reached++;
          delete pNext;
       }
    }
