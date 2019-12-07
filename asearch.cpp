@@ -29,7 +29,8 @@ int FecDiv[NUM_FEC] = { 1, 2, 3 };
 int min_cost = 0;
 int recent_cost = 0;
 int leafs_reached = 0;
-
+int visited_ignored = 0;
+int pruned = 0;
 
 class Node;
 Node *pMinCostNode = 0;
@@ -109,6 +110,7 @@ public:
       latency = 0;
       jitter = 0;
       cost = 0;
+	  nTotal = 0;
       
       CalcCost(false);
    }
@@ -131,6 +133,34 @@ public:
         return s;
     }
 
+	std::string ToRepr()
+	{
+		char sz[100];
+		std::string s;
+		sprintf(sz, "==================  TC %d ================\n", tc);
+		s += sz;
+		s += "CH/FEC   ";
+		for (int f = 0; f < NUM_FEC; f++)
+		{
+			sprintf(sz, "  %d  ", f);
+			s += sz;
+		}
+		s += "\n";
+		for (int ch = 0; ch < NUM_CHANNELS; ch++)
+		{
+			sprintf(sz, "%d        ", ch);
+			s += sz;
+			for (int f = 0; f < NUM_FEC; f++)
+			{
+				sprintf(sz, "  %d  ", bc[ch][f]);
+				s += sz;
+			}
+			s += "\n";
+		}
+		return s;
+	}
+
+
    bool IsAllAllocated()
    {
       return bc[0][0] == 0;
@@ -146,25 +176,41 @@ public:
 
       bc[ch][fec] += chunk;
       bc[0][0] -= chunk;
-      CalcCost(true);
+      // CalcCost(true);
+	  cost = 0;
+	  drop = 0;
+	  jitter = 0;
+	  latency = 0;
+	  nTotal = 0;
 
    }
+
    
+
+#
    int B(int c)
    {
-      int nTotal;
-      if(nTotal)
-         return nTotal;
+      
+   //   if(nTotal)
+   //      return nTotal;
 
+	  int n = 0;
       for(int f = 0; f < NUM_FEC; f++)
       {
-         nTotal += bc[c][f] * FecMult[f]/FEC_DIVIDER;
+         n += bc[c][f] * FecMult[f]/FEC_DIVIDER;
       }
 
-      return nTotal;
+      return n;
    }
 
-   
+
+   int CalcHeristics()
+   {
+	   CalcLatency(3);
+	   CalcJitter(3);
+	   CalcDrop(3);	   
+	   return jitter * tcJitterCost[tc] + latency * tcLatencyCost[tc] + drop * tcDropCost[tc];
+   }
    
    int CalcCost(bool force)
    {
@@ -188,7 +234,7 @@ public:
    }
 
 
-   int CalcDrop()
+   int CalcDrop(bool fecOvrd = 0)
    {
       if (drop)
          return drop;
@@ -205,7 +251,7 @@ public:
             if(bc[c][f])
             {
                int d = D(c);
-               d /= FecDiv[f];
+               d /= (fecOvrd ? fecOvrd : FecDiv[f]);
                if (d > 0)
                   drop += (bc[c][f] / 1000)*d;
             }
@@ -218,7 +264,7 @@ public:
       
 
    
-   int CalcLatency()
+   int CalcLatency(bool fecOvrd=0)
    {
       if (latency)
          return latency;
@@ -233,7 +279,7 @@ public:
             {
                int l = L(c);
                int d = D(c);
-               d /= FecDiv[f];
+               d /= (fecOvrd? fecOvrd:FecDiv[f]);
                if (d > 0)
                   l *= 2;
                if (maxLatency < l)
@@ -245,7 +291,7 @@ public:
       return latency;
    }
 
-   int CalcJitter()
+   int CalcJitter(bool fecOvrd = 0)
    {
       if (jitter)
          return jitter;
@@ -263,7 +309,7 @@ public:
             {
                int l = L(c);
                int d = D(c);
-               d /= FecDiv[f];
+               d /= (fecOvrd ? fecOvrd : FecDiv[f]);
                if (d > 0)
                   l *= 2;
                if (maxLatency < l)
@@ -293,6 +339,7 @@ public:
    int latency;
    int jitter;
    int drop;
+   int nTotal;
 };
 
 class Node
@@ -307,7 +354,6 @@ public:
       }
       changed_ch = 0;
       changed_fec = 0;
-      
    }
 
 
@@ -329,6 +375,20 @@ public:
         save_str = s;
         return save_str;
     }
+
+	std::string ToRepr()
+	{
+		std::string s;
+		char sz[100];
+
+		for (int t = 0; t < NUM_TRAFFIC_CLASSES; t++)
+		{
+			s += tcs[t].ToRepr();
+		}
+		return s;
+	}
+
+
 
     bool IsVisited()
     {
@@ -384,9 +444,11 @@ public:
 
       int tc = GetUncomplited();
       int n = 0;
+	  bool bHadPruned = 0;
       if (tc >=0)
       {
-         for(int ch = 1; ch < NUM_CHANNELS; ch++)
+         // for(int ch = 1; ch < NUM_CHANNELS; ch++)
+		  for (int ch = NUM_CHANNELS-1; ch>0; ch--)
          {
             if(ChFull(ch))
                continue;
@@ -394,26 +456,72 @@ public:
             {
                Node *pNode = new Node(*this);
                pNode->save_str = "";
-               pNode->AllocateChunk(tc, try_chunk, ch, fec);  
-               st.push(pNode);
-               n++;
+               pNode->AllocateChunk(tc, try_chunk, ch, fec);
+
+			   if (min_cost > 0 && pNode->CalcHeristic() > min_cost)
+			   {
+				   delete pNode;
+				   pruned++;
+			   }
+			   else
+			   {
+				   st.push(pNode);
+				   n++;
+			   }
             }
          }
       }
-      GetCost();
-      if (min_cost ==0 || cost < min_cost)
-      {
-         min_cost = cost;
-         if (pMinCostNode)
-            delete pMinCostNode;
-         pMinCostNode = new Node(*this);
-      }
 
-      if(recent_cost == 0 || cost < recent_cost)
-          recent_cost = cost;
+	  // leaf node
+	  if (n == 0 && !bHadPruned)
+	  {
+		  GetCost();
+		  if (min_cost == 0 || cost < min_cost)
+		  {
+			  min_cost = cost;
+			  if (pMinCostNode)
+				  delete pMinCostNode;
+			  pMinCostNode = new Node(*this);
+		  }
+		  if (recent_cost == 0 || cost < recent_cost)
+		  {
+				  recent_cost = cost;
+		  }
+	  }
 
       return n;
    }
+
+   int CalcHeristic()
+   {
+	   Node heristicNode(*this);
+	   int tc = heristicNode.GetUncomplited();
+	   int n = 0;
+	   int chMin = 1;
+	   while (tc >= 0 && chMin < NUM_CHANNELS)
+	   {
+		   for (int ch = chMin; ch < NUM_CHANNELS; ch++)
+		   {
+			   if (heristicNode.ChFull(ch))
+			   {
+				   chMin = ch + 1;
+				   continue;
+			   }
+			   heristicNode.AllocateChunk(tc, try_chunk, ch, 0);
+		   }
+		   tc = heristicNode.GetUncomplited();
+	   }
+
+
+	   int heristics = 0;
+	   for (int t = 0; t < NUM_TRAFFIC_CLASSES; t++)
+	   {
+		   heristics += tcs[t].CalcHeristics();
+	   }
+
+	   return heristics;
+   }
+
 
    bool ChFull(int ch)
    {
@@ -458,6 +566,7 @@ public:
    int changed_tc;
     //bool visited;
     std::string save_str;
+	
    
 };
 
@@ -528,12 +637,18 @@ void Algorithm()
    stack<Node *> st;
    st.push(head);
    int loop = 0;
+   Node* pPrintedNode = 0;
    while(!st.empty())
    {
       loop++;
       if(loop % 1000 == 0)
       {
-          printf("Loop %d Size=%d cost=%d recent=%d leafes=%d visited=%d\n", loop, (int) st.size(), min_cost, recent_cost, leafs_reached, visited.size());
+          printf("Loop %d Size=%d cost=%d recent=%d leafes=%d visited=%zu ignored=%d pruned=%d\n", loop, (int) st.size(), min_cost, recent_cost, leafs_reached, visited.size(), visited_ignored, pruned);
+		  if (pMinCostNode && pMinCostNode != pPrintedNode)
+		  {
+			  pPrintedNode = pMinCostNode;
+			  printf("%s", pMinCostNode->ToRepr().c_str());
+		  }
           recent_cost = 0;
           
       }
@@ -547,16 +662,25 @@ void Algorithm()
              leafs_reached++;
          delete pNext;
       }
+	  else
+	  {
+		  visited_ignored++;
+	  }
+
    }
+   printf("Loop %d Size=%d cost=%d recent=%d leafes=%d visited=%zu ignored=%d pruned=%d res=%s\n", loop, (int)st.size(), min_cost, recent_cost, leafs_reached, visited.size(), visited_ignored, pruned, pMinCostNode->ToStr().c_str());
+   printf("%s", pMinCostNode->ToRepr().c_str());
 }
 
-
+#if !defined(_WIN32)
 int main(int, char **)
 {
    Algorithm();
    printf("Cost = %d", min_cost);
    return 0;
 }
+#endif
+
 
 
 
