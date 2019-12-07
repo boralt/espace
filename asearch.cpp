@@ -137,14 +137,16 @@ public:
 	{
 		char sz[100];
 		std::string s;
-		sprintf(sz, "==================  TC %d ================\n", tc);
+		sprintf(sz, "====  TC %d === drop/lat/jit/cost %d %d %d %d\n", tc, drop, latency, jitter, cost);
 		s += sz;
 		s += "CH/FEC   ";
 		for (int f = 0; f < NUM_FEC; f++)
 		{
-			sprintf(sz, "  %d  ", f);
+			sprintf(sz, "    %d    ", f);
 			s += sz;
 		}
+
+
 		s += "\n";
 		for (int ch = 0; ch < NUM_CHANNELS; ch++)
 		{
@@ -152,7 +154,7 @@ public:
 			s += sz;
 			for (int f = 0; f < NUM_FEC; f++)
 			{
-				sprintf(sz, "  %d  ", bc[ch][f]);
+				sprintf(sz, " %06d ", bc[ch][f]);
 				s += sz;
 			}
 			s += "\n";
@@ -354,6 +356,7 @@ public:
       }
       changed_ch = 0;
       changed_fec = 0;
+
    }
 
 
@@ -410,6 +413,11 @@ public:
       return -1;
    }
 
+   int IsCompleted(int tc)
+   {
+	   return tcs[tc].IsAllAllocated();
+   }
+
    Node *GetNextDescendent(Node *prevDescendent)
    {
 
@@ -458,7 +466,9 @@ public:
                pNode->save_str = "";
                pNode->AllocateChunk(tc, try_chunk, ch, fec);
 
-			   if (min_cost > 0 && pNode->CalcHeristic() > min_cost)
+			   int her = pNode->CalcHeristic();
+			   
+			   if (min_cost > 0 && her > min_cost)
 			   {
 				   delete pNode;
 				   pruned++;
@@ -498,30 +508,46 @@ public:
 	   int tc = heristicNode.GetUncomplited();
 	   int n = 0;
 	   int chMin = 1;
+
+
 	   while (tc >= 0 && chMin < NUM_CHANNELS)
 	   {
-		   for (int ch = chMin; ch < NUM_CHANNELS; ch++)
+		  
+
+		   for (int ch = chMin; ch < NUM_CHANNELS; )
 		   {
+
 			   if (heristicNode.ChFull(ch))
 			   {
 				   chMin = ch + 1;
+				   ch += 1;
 				   continue;
 			   }
+			   if (heristicNode.IsCompleted(tc))
+			   {
+				   break;
+			   }
+
 			   heristicNode.AllocateChunk(tc, try_chunk, ch, 0);
+
 		   }
 		   tc = heristicNode.GetUncomplited();
 	   }
 
 
+	   return heristicNode.SumHeristics();
+   }
+
+   int SumHeristics()
+   {
 	   int heristics = 0;
 	   for (int t = 0; t < NUM_TRAFFIC_CLASSES; t++)
 	   {
 		   heristics += tcs[t].CalcHeristics();
 	   }
-
 	   return heristics;
-   }
 
+   }
 
    bool ChFull(int ch)
    {
