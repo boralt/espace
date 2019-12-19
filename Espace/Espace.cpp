@@ -2,21 +2,36 @@
 //
 
 #include <iostream>
-#include "run_config.h""
+#include <zconf.h>
+#include "run_config.h"
+#include "web.h"
 
 
 extern void Algorithm(RunConfig &_rc);
 extern int min_cost;
 
+#define WEB_SERVER_PORT "7777"
+
 int main()
 {
 	RunConfig rc;
+	WebServer  ws(WEB_SERVER_PORT);
+	char buf[256];
+
 	rc.ConfigureDefault();
+	rc.ws = &ws;
+
+	// start web server (creates pthread)
+	ws.Start();
 
 	Algorithm(rc);
-	printf("Cost = %d", min_cost);
+	sprintf(buf,"***********************\nCost = %d\n", min_cost);
+	ws.AppendDataBuffer(buf);
+
+	sleep(30); // let web server run a bit
+	ws.Stop();
+
 	return 0;
-	
 
 }
 

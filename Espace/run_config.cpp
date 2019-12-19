@@ -8,7 +8,7 @@ RunConfig::RunConfig() :
 	num_fec(0), 
 	try_chunk(0)
 {
-
+	ws=NULL;
 }
 
 RunConfig::RunConfig(Json::Value& v)

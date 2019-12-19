@@ -686,18 +686,26 @@ void Algorithm(RunConfig &_rc)
    st.push(head);
    int loop = 0;
    Node* pPrintedNode = 0;
+#define BLEN 1024
+   char buf[BLEN+1];
+	int pos=0;
+
    while(!st.empty())
    {
       loop++;
       if(loop % 1000 == 0)
       {
-          printf("Loop %d Size=%d cost=%d recent=%d leafes=%d visited=%zu ignored=%d pruned=%d\n", loop, (int) st.size(), min_cost, recent_cost, leafs_reached, visited.size(), visited_ignored, pruned);
-		  if (pMinCostNode && pMinCostNode != pPrintedNode)
-		  {
-			  pPrintedNode = pMinCostNode;
-			  printf("%s", pMinCostNode->ToRepr().c_str());
-		  }
-          recent_cost = 0;
+			pos += snprintf(buf,BLEN,"Loop %d Size=%d cost=%d recent=%d leafes=%d visited=%zu ignored=%d pruned=%d\n",
+								 loop, (int) st.size(), min_cost, recent_cost, leafs_reached, visited.size(), visited_ignored, pruned);
+			if (pMinCostNode && pMinCostNode != pPrintedNode)
+			{
+				pPrintedNode = pMinCostNode;
+				pos += snprintf(&buf[pos],BLEN-pos,"%s", pMinCostNode->ToRepr().c_str());
+			}
+			printf("%s\n",buf);
+			_rc.ws->AppendDataBuffer(buf);
+			pos=0;
+			recent_cost = 0;
           
       }
       Node *pNext = st.top();
@@ -719,7 +727,7 @@ void Algorithm(RunConfig &_rc)
    printf("Loop %d Size=%d cost=%d recent=%d leafes=%d visited=%zu ignored=%d pruned=%d res=%s\n", loop, (int)st.size(), min_cost, recent_cost, leafs_reached, visited.size(), visited_ignored, pruned, pMinCostNode->ToStr().c_str());
    printf("%s", pMinCostNode->ToRepr().c_str());
 }
-
+#if 0
 #if !defined(_WIN32)
 int main(int, char **)
 {
@@ -727,6 +735,7 @@ int main(int, char **)
    printf("Cost = %d", min_cost);
    return 0;
 }
+#endif
 #endif
 
 

@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <json-forwards.h>
+#include "web.h"
 
 // search run configuration
 class RunConfig
@@ -34,5 +35,5 @@ public:
 	std::vector<int> tcLatencyCost; // cost of latency 
 	std::vector<int> tcDropCost;	// cost of packet drop
 
-
+	WebServer *ws;
 };
