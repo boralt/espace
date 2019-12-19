@@ -2,14 +2,18 @@
 //
 
 #include <iostream>
+#include "run_config.h""
 
 
-extern void Algorithm();
+extern void Algorithm(RunConfig &_rc);
 extern int min_cost;
 
 int main()
 {
-	Algorithm();
+	RunConfig rc;
+	rc.ConfigureDefault();
+
+	Algorithm(rc);
 	printf("Cost = %d", min_cost);
 	return 0;
 	

@@ -6,27 +6,33 @@
 #include <unordered_set>
 #include <string>
 
-#include <run_config.h>
+#include "run_config.h"
 
 using namespace std;
 
+RunConfig cfg;
 
 std::unordered_set<std::string> visited; 
 
-#define NUM_CHANNELS  4
-#define NUM_TRAFFIC_CLASSES  8
-#define NUM_FEC  3
+#if 0
+
+#define cfg.num_channels  4
+#define cfg.num_traffic_classes  8
+#define cfg.num_fec  3
 
 // channel 0 is unallocated
 
-int LofC[NUM_CHANNELS] = {2000, 100,200,300};
-int JofC[NUM_CHANNELS] = {600,30,10,40};
-int BoC[NUM_CHANNELS] = {9000000, 10000, 20000, 40000 };
-int DoC[NUM_CHANNELS] = {1000, 1, 2, 3};
+int LofC[cfg.num_channels] = {2000, 100,200,300};
+int JofC[cfg.num_channels] = {600,30,10,40};
+int BoC[cfg.num_channels] = {9000000, 10000, 20000, 40000 };
+int DoC[cfg.num_channels] = {1000, 1, 2, 3};
 
-int FecMult[NUM_FEC] = { 100, 110, 150};
-int FecDiv[NUM_FEC] = { 1, 2, 3 };
-   
+int FecMult[cfg.num_fec] = { 100, 110, 150};
+int FecDiv[cfg.num_fec] = { 1, 2, 3 };
+
+#endif
+
+
 #define FEC_DIVIDER  100
 
 int min_cost = 0;
@@ -37,60 +43,61 @@ int pruned = 0;
 
 class Node;
 Node *pMinCostNode = 0;
-   
+
+#if 0
 // traffic requirements
-int Treq[NUM_TRAFFIC_CLASSES] = {
+int Treq[cfg.num_traffic_classes] = {
    5000, 6000, 7000, 8000, 9000, 10000, 11000, 12000
 };
 
-int tcJitterCost[NUM_TRAFFIC_CLASSES] =
+int tcJitterCost[cfg.num_traffic_classes] =
 {
    9,8,7,6,5,4,3,2
 };
 
 
-int tcLatencyCost[NUM_TRAFFIC_CLASSES] =
+int tcLatencyCost[cfg.num_traffic_classes] =
 {
 
    9,8,7,6,5,4,3,2
 };
 
-int tcDropCost[NUM_TRAFFIC_CLASSES] =
+int tcDropCost[cfg.num_traffic_classes] =
 {
    9,8,7,6,5,4,3,2
 };
 
 int try_chunk = 1000;
-
+#endif
    
 // latency
 int L(int channel)
 {
-   return LofC[channel];
+   return cfg.LofC[channel];
 }
 
 int L(int channel, int fec)
 {
-   return LofC[channel];
+   return cfg.LofC[channel];
 }
 
 
 // jitter
 int J(int channel)
 {
-   return JofC[channel]; 
+   return cfg.JofC[channel];
 }
 
 // drop
 int D(int channel)
 {
-   return DoC[channel]; 
+   return cfg.DoC[channel];
 }
 
 // bw
 int B(int channel)
 {
-   return BoC[channel]; 
+   return cfg.BoC[channel];
 }
 
 
@@ -100,7 +107,16 @@ public:
 
    T()
    {
-      memset(bc, 0, sizeof(bc));
+          
+      //memset(bc, 0, sizeof(bc));
+	   for (int ch = 0; ch < cfg.num_channels; ch++)
+	   {
+		   bc.push_back(vector<int>(cfg.num_fec, 0));
+	   }
+			
+
+	  //std::fill(bc[0].begin(), bc[0].end(), 0);
+	  //std::fill(bc.begin(), bc.end(), bc[0]);
       tc = 0;
    }
    
@@ -122,11 +138,11 @@ public:
     {
         std::string s;
         char sz[100];
-        for(int ch=0; ch < NUM_CHANNELS; ch++)
+        for(int ch=0; ch < cfg.num_channels; ch++)
         {
             sprintf(sz, "%d[", ch);
             s+= sz;
-            for(int f=0; f < NUM_FEC; f++)
+            for(int f=0; f < cfg.num_fec; f++)
             {
                 sprintf(sz, "%d:%d", f, bc[ch][f]);
                 s+= sz;
@@ -143,7 +159,7 @@ public:
 		sprintf(sz, "====  TC %d === drop/lat/jit/cost %d %d %d %d\n", tc, drop, latency, jitter, cost);
 		s += sz;
 		s += "CH/FEC   ";
-		for (int f = 0; f < NUM_FEC; f++)
+		for (int f = 0; f < cfg.num_fec; f++)
 		{
 			sprintf(sz, "    %d    ", f);
 			s += sz;
@@ -151,11 +167,11 @@ public:
 
 
 		s += "\n";
-		for (int ch = 0; ch < NUM_CHANNELS; ch++)
+		for (int ch = 0; ch < cfg.num_channels; ch++)
 		{
 			sprintf(sz, "%d        ", ch);
 			s += sz;
-			for (int f = 0; f < NUM_FEC; f++)
+			for (int f = 0; f < cfg.num_fec; f++)
 			{
 				sprintf(sz, " %06d ", bc[ch][f]);
 				s += sz;
@@ -200,9 +216,9 @@ public:
    //      return nTotal;
 
 	  int n = 0;
-      for(int f = 0; f < NUM_FEC; f++)
+      for(int f = 0; f < cfg.num_fec; f++)
       {
-         n += bc[c][f] * FecMult[f]/FEC_DIVIDER;
+         n += bc[c][f] * cfg.FecMult[f]/FEC_DIVIDER;
       }
 
       return n;
@@ -214,7 +230,7 @@ public:
 	   CalcLatency(3);
 	   CalcJitter(3);
 	   CalcDrop(3);	   
-	   return jitter * tcJitterCost[tc] + latency * tcLatencyCost[tc] + drop * tcDropCost[tc];
+	   return jitter * cfg.tcJitterCost[tc] + latency * cfg.tcLatencyCost[tc] + drop * cfg.tcDropCost[tc];
    }
    
    int CalcCost(bool force)
@@ -234,7 +250,7 @@ public:
       CalcJitter();
       CalcDrop();
       
-      cost = jitter*tcJitterCost[tc] + latency*tcLatencyCost[tc] + drop*tcDropCost[tc];
+      cost = jitter* cfg.tcJitterCost[tc] + latency* cfg.tcLatencyCost[tc] + drop* cfg.tcDropCost[tc];
       return cost;
    }
 
@@ -249,14 +265,14 @@ public:
       if (bc[0][0])
          drop += bc[0][0];
       
-      for (int c=1; c<NUM_CHANNELS; c++)
+      for (int c=1; c<cfg.num_channels; c++)
       {
-         for (int f=0; f < NUM_FEC; f++)
+         for (int f=0; f < cfg.num_fec; f++)
          {
             if(bc[c][f])
             {
                int d = D(c);
-               d /= (fecOvrd ? fecOvrd : FecDiv[f]);
+               d /= (fecOvrd ? fecOvrd : cfg.FecDiv[f]);
                if (d > 0)
                   drop += (bc[c][f] / 1000)*d;
             }
@@ -276,15 +292,15 @@ public:
 
       int maxLatency = 0;
       
-      for (int c=0; c<NUM_CHANNELS; c++)
+      for (int c=0; c<cfg.num_channels; c++)
       {
-         for (int f=0; f < NUM_FEC; f++)
+         for (int f=0; f < cfg.num_fec; f++)
          {
             if(bc[c][f])
             {
                int l = L(c);
                int d = D(c);
-               d /= (fecOvrd? fecOvrd:FecDiv[f]);
+               d /= (fecOvrd? fecOvrd: cfg.FecDiv[f]);
                if (d > 0)
                   l *= 2;
                if (maxLatency < l)
@@ -306,15 +322,15 @@ public:
       int jitterOnMax = 0;
       int jitterOnMin = 0;
       
-      for (int c=0; c<NUM_CHANNELS; c++)
+      for (int c=0; c<cfg.num_channels; c++)
       {
-         for (int f=0; f < NUM_FEC; f++)
+         for (int f=0; f < cfg.num_fec; f++)
          {
             if(bc[c][f])
             {
                int l = L(c);
                int d = D(c);
-               d /= (fecOvrd ? fecOvrd : FecDiv[f]);
+               d /= (fecOvrd ? fecOvrd : cfg.FecDiv[f]);
                if (d > 0)
                   l *= 2;
                if (maxLatency < l)
@@ -338,7 +354,7 @@ public:
 
    
    
-   int bc[NUM_CHANNELS][NUM_FEC];    // bandwidth per channel
+   vector < vector<int> > bc;    // bandwidth per channel
    int cost;
    int tc;
    int latency;
@@ -353,9 +369,11 @@ public:
    Node()
    {
       cost = 0;
-      for(int t = 0; t < NUM_TRAFFIC_CLASSES; t++)
+	  //tcs.resize(cfg.num_traffic_classes);
+      for(int t = 0; t < cfg.num_traffic_classes; t++)
       {
-         tcs[t].init(Treq[t], t);
+		 tcs.push_back(T());
+         tcs[t].init(cfg.Treq[t], t);
       }
       changed_ch = 0;
       changed_fec = 0;
@@ -371,7 +389,7 @@ public:
         std::string s;
         char sz[100];
         
-        for(int t = 0; t < NUM_TRAFFIC_CLASSES; t++)
+        for(int t = 0; t < cfg.num_traffic_classes; t++)
         {
             sprintf(sz, "%d:{", t );
             s += sz;
@@ -387,7 +405,7 @@ public:
 		std::string s;
 		char sz[100];
 
-		for (int t = 0; t < NUM_TRAFFIC_CLASSES; t++)
+		for (int t = 0; t < cfg.num_traffic_classes; t++)
 		{
 			s += tcs[t].ToRepr();
 		}
@@ -408,7 +426,7 @@ public:
 
    int GetUncomplited()
    {
-      for(int t=0;t < NUM_TRAFFIC_CLASSES; t++)
+      for(int t=0;t < cfg.num_traffic_classes; t++)
       {
          if (!tcs[t].IsAllAllocated())
             return t;
@@ -427,23 +445,23 @@ public:
       int prev_ch = prevDescendent->changed_ch;
       int prev_fec = prevDescendent->changed_fec;
       int prev_tc = prevDescendent->changed_tc;
-      if(prev_fec < (NUM_FEC-1))
+      if(prev_fec < (cfg.num_fec-1))
       {
          Node *pNextNode = new Node(*this);
-         pNextNode->AllocateChunk(prev_tc, try_chunk, prev_ch, prev_fec+1);
+         pNextNode->AllocateChunk(prev_tc, cfg.try_chunk, prev_ch, prev_fec+1);
          return pNextNode;
       }
-      else if( prev_ch < (NUM_CHANNELS-1))
+      else if( prev_ch < (cfg.num_channels-1))
       {
          Node *pNextNode = new Node(*this);
-         pNextNode->AllocateChunk(prev_tc, try_chunk, prev_ch+1, 0);
+         pNextNode->AllocateChunk(prev_tc, cfg.try_chunk, prev_ch+1, 0);
          return pNextNode;
          
       }
-      else if(prev_tc < (NUM_TRAFFIC_CLASSES-1))
+      else if(prev_tc < (cfg.num_traffic_classes-1))
       {
          Node *pNextNode = new Node(*this);
-         pNextNode->AllocateChunk(prev_tc+1, try_chunk, 1, 0);
+         pNextNode->AllocateChunk(prev_tc+1, cfg.try_chunk, 1, 0);
          return pNextNode;
       }
       return 0;
@@ -458,16 +476,16 @@ public:
 	  bool bHadPruned = 0;
       if (tc >=0)
       {
-         // for(int ch = 1; ch < NUM_CHANNELS; ch++)
-		  for (int ch = NUM_CHANNELS-1; ch>0; ch--)
+         // for(int ch = 1; ch < cfg.num_channels; ch++)
+		  for (int ch = cfg.num_channels-1; ch>0; ch--)
          {
             if(ChFull(ch))
                continue;
-            for(int fec = 0; fec < NUM_FEC; fec++)
+            for(int fec = 0; fec < cfg.num_fec; fec++)
             {
                Node *pNode = new Node(*this);
                pNode->save_str = "";
-               pNode->AllocateChunk(tc, try_chunk, ch, fec);
+               pNode->AllocateChunk(tc, cfg.try_chunk, ch, fec);
 
 			   int her = pNode->CalcHeristic();
 			   
@@ -513,11 +531,11 @@ public:
 	   int chMin = 1;
 
 
-	   while (tc >= 0 && chMin < NUM_CHANNELS)
+	   while (tc >= 0 && chMin < cfg.num_channels)
 	   {
 		  
 
-		   for (int ch = chMin; ch < NUM_CHANNELS; )
+		   for (int ch = chMin; ch < cfg.num_channels; )
 		   {
 
 			   if (heristicNode.ChFull(ch))
@@ -531,7 +549,7 @@ public:
 				   break;
 			   }
 
-			   heristicNode.AllocateChunk(tc, try_chunk, ch, 0);
+			   heristicNode.AllocateChunk(tc, cfg.try_chunk, ch, 0);
 
 		   }
 		   tc = heristicNode.GetUncomplited();
@@ -544,7 +562,7 @@ public:
    int SumHeristics()
    {
 	   int heristics = 0;
-	   for (int t = 0; t < NUM_TRAFFIC_CLASSES; t++)
+	   for (int t = 0; t < cfg.num_traffic_classes; t++)
 	   {
 		   heristics += tcs[t].CalcHeristics();
 	   }
@@ -556,12 +574,12 @@ public:
    {
       int chBw = 0;
       
-      for(int tc=0; tc < NUM_TRAFFIC_CLASSES; tc++)
+      for(int tc=0; tc < cfg.num_traffic_classes; tc++)
       {
          chBw += tcs[tc].B(ch);
       }
 
-      return chBw >= BoC[ch];
+      return chBw >= cfg.BoC[ch];
    }
    
    
@@ -580,7 +598,7 @@ public:
          return cost;
       
       cost = 0;
-      for(int t=0;t < NUM_TRAFFIC_CLASSES; t++)
+      for(int t=0;t < cfg.num_traffic_classes; t++)
       {
          cost += tcs[t].CalcCost(false); 
       }
@@ -588,7 +606,7 @@ public:
       return cost;
    }
    
-   T tcs[NUM_TRAFFIC_CLASSES];
+   vector<T> tcs;
    int cost;
    int changed_ch;
    int changed_fec;
@@ -604,7 +622,7 @@ public:
 int LC(T t)
 {
    int maxL = 0;
-   for (int c=0; c<NUM_CHANNELS; c++)
+   for (int c=0; c<cfg.num_channels; c++)
    {
       int l = L(c);
       if (t.B(c))
@@ -621,7 +639,7 @@ int LD(T t)
 {
    int totalD = 0;
    int nChannels=0;
-   for (int c=0; c<NUM_CHANNELS; c++)
+   for (int c=0; c<cfg.num_channels; c++)
    {
       int d = D(c);
       if (t.B(c))
@@ -642,7 +660,7 @@ int JC(T t)
    int maxL = 0;
    int minL = 0;
    int maxJ = 0;
-   for (int c=0; c<NUM_CHANNELS; c++)
+   for (int c=0; c<cfg.num_channels; c++)
    {
       if( t.B(c))
       {
@@ -660,8 +678,9 @@ int JC(T t)
    return maxL-minL + maxJ;;
 }
 
-void Algorithm()
+void Algorithm(RunConfig &_rc)
 {
+	cfg = _rc;
    Node *head = new Node;
    stack<Node *> st;
    st.push(head);
