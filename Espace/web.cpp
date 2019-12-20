@@ -87,7 +87,7 @@ int WebServer::HandleRequest(sb_Event *e)
 
 void WebServer::SetDataBuffer(std::string data)
 {
-	mDataBuffer="";
+	mDataBuffer=data;
 }
 
 void WebServer::AppendDataBuffer(std::string data)

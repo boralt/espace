@@ -24,7 +24,7 @@ int main(void)
 	sb_Server  *server;
 
 	memset(&opt, 0, sizeof(opt));
-	opt.port    = mPort;
+	opt.port    = "8000";
 	opt.handler = event_handler;
 
 	server = sb_new_server(&opt);
