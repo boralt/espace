@@ -3,6 +3,8 @@
 #include <vector>
 #include <json-forwards.h>
 #include "web.h"
+#include <string>
+#include "json.h"
 
 // search run configuration
 class RunConfig
@@ -13,6 +15,7 @@ public:
 	RunConfig();
 	RunConfig(Json::Value &v);
 
+	bool LoadJsonConfigFromFile();
 
 	void ConfigureDefault();
 
@@ -36,4 +39,13 @@ public:
 	std::vector<int> tcDropCost;	// cost of packet drop
 
 	WebServer *ws;
+
+private:
+	bool ReadFile();
+	bool ParseJson();
+	bool AddArrayValues(std::vector<int> *vec, const Json::Value values);
+	std::string mJsonData;
+	typedef  std::pair<std::string,std::vector<int> *>  VP;
+	std::map<std::string,std::vector<int> *> mSchemaMap;
+	std::vector<std::string> mCategories;
 };

@@ -1,0 +1,16 @@
+{
+  "try_chunk": 1000,
+  "channels":[
+    {"name":"ch_latency_ms","values":[ 2000, 100,200,300 ]},
+    {"name":"ch_jitter_ms","values":[600,30,10,40 ]},
+    {"name":"ch_bw_kbps","values":[9000000, 10000, 20000, 40000]},
+    {"name":"ch_pkt_drop","values":[1000, 1, 2, 3]}],
+  "traffic_classes": [
+    {"name": "tc_bw_kbps","values": [5000, 6000, 7000, 8000, 9000, 10000, 11000, 12000]},
+    {"name": "tc_jitter_cost","values": [9,8,7,6,5,4,3,2]},
+    {"name": "tc_latency_cost","values": [9,8,7,6,5,4,3,2]},
+    {"name": "tc_pkt_drop_cost","values": [9,8,7,6,5,4,3,2]}],
+  "fec": [
+    {"name":"fec_multiplier","values":[100,110,150]},
+    {"name":"fec_divider","values":[1,2,3]}]
+}

@@ -7,6 +7,8 @@ include_directories(Espace)
 include_directories(json/json)
 include_directories(sandbird/src)
 
+configure_file(Espace/config.json ${CMAKE_CURRENT_BINARY_DIR})
+
 add_executable(espace
         Espace/asearch.cpp
         Espace/Espace.cpp

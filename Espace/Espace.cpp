@@ -17,16 +17,24 @@ int main()
 	RunConfig rc;
 	WebServer  ws(WEB_SERVER_PORT);
 	char buf[256];
+	std::string json_str;
 
-	rc.ConfigureDefault();
 	rc.ws = &ws;
-
+#if 0
+	rc.ConfigureDefault();
+#else  // read from json file
+	if (!rc.LoadJsonConfigFromFile())
+	{
+		return 0;
+	}
+#endif
 	// start web server (creates pthread)
 	ws.Start();
 
 	Algorithm(rc);
 	sprintf(buf,"***********************\nCost = %d\n", min_cost);
 	ws.AppendDataBuffer(buf);
+	std::cout << buf << std::endl;
 
 	sleep(30); // let web server run a bit
 	ws.Stop();
