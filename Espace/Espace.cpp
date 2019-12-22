@@ -2,7 +2,7 @@
 //
 
 #include <iostream>
-#include <zconf.h>
+// #include <zconf.h>
 #include "run_config.h"
 #include "web.h"
 
@@ -36,7 +36,7 @@ int main()
 	ws.AppendDataBuffer(buf);
 	std::cout << buf << std::endl;
 
-	sleep(30); // let web server run a bit
+//	sleep(30); // let web server run a bit
 	ws.Stop();
 
 	return 0;

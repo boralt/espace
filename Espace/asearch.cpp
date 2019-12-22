@@ -255,7 +255,7 @@ public:
    }
 
 
-   int CalcDrop(bool fecOvrd = 0)
+   int CalcDrop(int fecOvrd = 0)
    {
       if (drop)
          return drop;
@@ -285,7 +285,7 @@ public:
       
 
    
-   int CalcLatency(bool fecOvrd=0)
+   int CalcLatency(int fecOvrd=0)
    {
       if (latency)
          return latency;
@@ -312,7 +312,7 @@ public:
       return latency;
    }
 
-   int CalcJitter(bool fecOvrd = 0)
+   int CalcJitter(int fecOvrd = 0)
    {
       if (jitter)
          return jitter;

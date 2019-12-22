@@ -10,11 +10,21 @@ static int event_handler(sb_Event *ev)
 	return ws->HandleRequest(ev);
 }
 
+
+#if defined(_WIN32)
+DWORD web_server_thread(LPVOID lpParam)
+{
+	((WebServer*)lpParam)->Run();
+	return 0;
+}
+#else
 void *web_server_thread(void *arg)
 {
 	((WebServer*)arg)->Run();
 	return NULL;
 }
+#endif
+
 
 void WebServer::Run()
 {
@@ -27,11 +37,21 @@ void WebServer::Run()
 
 bool WebServer::Start()
 {
+#if !defined(_WIN32)
 	if(pthread_create(&mTid, NULL, web_server_thread, this))
 	{
 		fprintf(stderr, "Error creating thread\n");
 		return false;
 	}
+#else
+	CreateThread(
+		NULL,                   // default security attributes
+		0,                      // use default stack size  
+		web_server_thread,       // thread function name
+		this,          // argument to thread function 
+		0,                      // use default creation flags 
+		NULL);   // returns the thread identifier 
+#endif
 
 	return true;
 }
@@ -40,7 +60,12 @@ void WebServer::Stop()
 {
 	mStopped=true;
 
+#if !defined _WIN32 
 	if(pthread_join(mTid, NULL))
+#else
+	if(!TerminateThread(mTid, 0))
+#endif
+
 	{
 		fprintf(stderr, "Error stopping web server\n");
 	}
