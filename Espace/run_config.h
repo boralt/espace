@@ -20,6 +20,7 @@ public:
 	int num_traffic_classes;
 	int num_fec;
 	int try_chunk;     // quanta of traffc allocation
+	int max_loop;
 
 	std::vector<int> LofC;		// latency of channel
 	std::vector<int> JofC;		// jitter of channel
@@ -34,6 +35,10 @@ public:
 	std::vector<int> tcLatencyCost; // cost of latency 
 	std::vector<int> tcDropCost;	// cost of packet drop
 
+	// Debug output
+	void WriteDebug(std::string str);
+	void WriteDebug(const char *fmt, ...);
+	WebServer *debug_server;
 private:
 	bool AddArrayValues(std::vector<int> *vec, const Json::Value values);
 	typedef  std::pair<std::string,std::vector<int> *>  VP;

@@ -10,8 +10,10 @@
 
 using namespace std;
 
+// TODO: cfg should not be global
 RunConfig cfg;
 
+// TODO: should not be global
 std::unordered_set<std::string> visited; 
 
 #if 0
@@ -43,6 +45,20 @@ int pruned = 0;
 
 class Node;
 Node *pMinCostNode = 0;
+
+// Init global data so algorithm can be run multiple times
+// TODO: this should all be in a class
+void Init(RunConfig &_rc)
+{
+	cfg=_rc;
+	min_cost=0;
+	recent_cost=0;
+	leafs_reached=0;
+	visited_ignored=0;
+	pruned=0;
+	pMinCostNode=NULL;
+	visited.clear();
+}
 
 #if 0
 // traffic requirements
@@ -754,36 +770,33 @@ int JC(T t)
 
 std::string Algorithm(RunConfig &_rc)
 {
-	cfg = _rc;
-   Node *head = new Node;
+	Init(_rc);
+
+	Node *head = new Node;
    stack<Node *> st;
    st.push(head);
    int loop = 0;
    Node* pPrintedNode = 0;
-#define BLEN 1024
-   char buf[BLEN+1];
-	int pos=0;
 
-   while(!st.empty())
+	while(!st.empty())
    {
       loop++;
-      //if (loop > 10000)  // temp: short circuit for web testing
-      //	break;
+      if (cfg.max_loop && loop >= cfg.max_loop)
+		{
+			cfg.WriteDebug("Algorithm stopping...reached max loop %d\n",loop);
+			break;
+		}
 
       if(loop % 1000 == 0)
       {
-			pos += snprintf(buf,BLEN,"Loop %d Size=%d cost=%d recent=%d leafes=%d visited=%zu ignored=%d pruned=%d\n",
+			cfg.WriteDebug("Loop %d Size=%d cost=%d recent=%d leafes=%d visited=%zu ignored=%d pruned=%d\n",
 								 loop, (int) st.size(), min_cost, recent_cost, leafs_reached, visited.size(), visited_ignored, pruned);
 			if (pMinCostNode && pMinCostNode != pPrintedNode)
 			{
 				pPrintedNode = pMinCostNode;
-				pos += snprintf(&buf[pos],BLEN-pos,"%s", pMinCostNode->ToRepr().c_str());
+				cfg.WriteDebug("%s\n", pMinCostNode->ToRepr().c_str());
 			}
-			printf("%s\n",buf);
-			//_rc.ws->AppendDataBuffer(buf);
-			pos=0;
 			recent_cost = 0;
-          
       }
       Node *pNext = st.top();
       st.pop();
@@ -801,8 +814,11 @@ std::string Algorithm(RunConfig &_rc)
 	  }
 
    }
-   printf("Loop %d Size=%d cost=%d recent=%d leafes=%d visited=%zu ignored=%d pruned=%d res=%s\n", loop, (int)st.size(), min_cost, recent_cost, leafs_reached, visited.size(), visited_ignored, pruned, pMinCostNode->ToStr().c_str());
-   printf("%s", pMinCostNode->ToRepr().c_str());
+
+	cfg.WriteDebug("Loop %d Size=%d cost=%d recent=%d leafes=%d visited=%zu ignored=%d pruned=%d res=%s\n",
+				loop, (int)st.size(), min_cost, recent_cost, leafs_reached, visited.size(),
+				visited_ignored, pruned, pMinCostNode->ToStr().c_str());
+	cfg.WriteDebug("%s\n", pMinCostNode->ToRepr().c_str());
 
 	return pMinCostNode->ToReprJson();
 }

@@ -16,6 +16,7 @@ extern std::string Algorithm(RunConfig &_rc);
 extern int min_cost;
 
 #define WEB_SERVER_PORT "7777"
+#define WEB_SERVER_PORT_DEBUG "7778"
 
 
 // for now place in executable dir
@@ -45,35 +46,50 @@ bool ReadFile(std::string filepath,  std::string &json)
 class RequestWork : public WorkerQueue
 {
 public:
-	RequestWork(){};
+	RequestWork()
+	{
+		mWsDebug=NULL;
+	};
+
 	~RequestWork(){};
 
 	void DoWork(std::string &json)
 	{
 		RunConfig cfg;
 		std:string ResultJson;
-		char buf[256];
+
+		cfg.debug_server = mWsDebug;
+
+		cfg.WriteDebug("----------------------------------------------------\n");
+		cfg.WriteDebug("Json Request:\n %s\n\n",json.c_str());
 
 		if (!cfg.ParseJson(json))
 		{
-			cout << "Could not parse json" << endl;
+			cfg.WriteDebug("Could not parse json\n");
 			return;
 		}
 
 		ResultJson="{\"request\":"+json+",";
 		ResultJson+="\"result\":";
+
+		// Run the algorithm
+		//cfg.max_loop = 20000; // temp fpr faster testing
 		ResultJson+=Algorithm(cfg);
+
 		ResultJson+="}";
 		ResponseAdd(ResultJson);
 
-		sprintf(buf,"Min Cost = %d\n", min_cost);
-		std::cout << buf << std::endl;
+		cfg.WriteDebug("Min Cost = %d\n", min_cost);
+		cfg.WriteDebug("Json Result:\n %s\n",ResultJson.c_str());
+	}
 
-		cout << ResultJson << endl;
+	void SetDebugServer(WebServer *ws)
+	{
+		mWsDebug=ws;
 	}
 
 private:
-
+	WebServer *mWsDebug;
 };
 
 
@@ -82,12 +98,18 @@ int main()
 	char buf[256];
 
 	RequestWork wq;
+	// used for official GET/POST of JSON data
 	WebServer  ws(WEB_SERVER_PORT,&wq);
+	// second web server for debug output only
+	WebServer  wsDebug(WEB_SERVER_PORT_DEBUG,NULL);
+
+	wq.SetDebugServer(&wsDebug);
 
 	// start worker queue thread
 	wq.Start();
-	// start web server thread
+	// start web server threads
 	ws.Start();
+	wsDebug.Start();
 
 	// main process thread does nothing
 	// TODO: need to add kill signal
@@ -98,6 +120,7 @@ int main()
 
 	ws.Stop();
 	wq.Stop();
+	wsDebug.Stop();
 
 	return 0;
 

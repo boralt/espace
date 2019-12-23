@@ -8,7 +8,9 @@ RunConfig::RunConfig() :
 	num_channels(0),
 	num_traffic_classes(0),
 	num_fec(0), 
-	try_chunk(0)
+	try_chunk(0),
+	debug_server(NULL),
+	max_loop(0)
 {
 	// Init JSON schema map into vectors
 	// Channels
@@ -89,9 +91,27 @@ bool RunConfig::AddArrayValues(std::vector<int> *vec, const Json::Value values)
 	}
 	for (x=0;x<values.size();x++)
 	{
-		//cout << values[x].asInt() << endl;
 		vec->push_back(values[x].asInt());
 	}
 	return true;
+}
+
+void RunConfig::WriteDebug(std::string str)
+{
+	if (debug_server)
+	{
+		debug_server->AppendDataBuffer(str);
+	}
+	cout << str;
+}
+
+void RunConfig::WriteDebug(const char *fmt, ...)
+{
+	char buf[4096];
+	va_list args;
+	va_start(args, fmt);
+	vsnprintf(buf,4095, fmt, args);
+	va_end(args);
+	WriteDebug(std::string(buf));
 }
 

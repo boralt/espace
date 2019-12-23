@@ -41,12 +41,26 @@ WebServer::~WebServer()
 
 WebServer::WebServer(const char *port, WorkerQueue *wq)
 {
+	Init(port);
+	if (wq)
+	{
+		mWq=wq;
+	}
+	else
+	{
+		mUseDataBuffer=true;
+	}
+}
+
+void WebServer::Init(const char* port)
+{
 	mCalled  = 0;
 	memset(&mOptions, 0, sizeof(mOptions));
 	mOptions.port    = port;
 	mOptions.handler = event_handler;
 	mOptions.udata   = this;
-	mWq = wq;
+	mWq = NULL;
+	mUseDataBuffer=false;
 	mServer = sb_new_server(&mOptions);
 
 	if (!mServer)
@@ -60,30 +74,38 @@ int WebServer::HandleRequest(sb_Event *e)
 	mCalled++;
 	if (e->type == SB_EV_REQUEST)
 	{
-		printf("WebRequest: %s - %s %s\n", e->address, e->method, e->path);
-		sb_send_status(e->stream, 200, "OK");
-		sb_send_header(e->stream, "Content-Type", "text/plain");
-		sb_writef(e->stream, "Espace simulator %d\n\n",mCalled);
-		//sb_writef(e->stream,mDataBuffer.c_str());
-
-
-		if (!strncmp(e->method,"POST",4) && e->content)
+		// TODO: clean this up
+		if (mUseDataBuffer)
 		{
-			printf("%d: [%s]\n",e->content_len,e->content);
-			// add to worker queue
-			mWq->RequestAdd(e->content);
+			time_t now;
+			time(&now);
+			// dump data buffer
+			sb_send_header(e->stream, "Content-Type", "text/plain");
+			sb_send_status(e->stream, 200, "OK");
+			sb_writef(e->stream, "Espace Simulator: %s\n\n",ctime(&now));
+			sb_writef(e->stream,mDataBuffer.c_str());
 		}
-		else
+		else // using message queue
 		{
-			std::string json;
-			LT;
-			if (mWq->ResponseRemove(json,10))
+			sb_send_header(e->stream, "Content-Type", "text/json");
+			sb_send_status(e->stream, 200, "OK");
+			if (!strncmp(e->method,"POST",4) && e->content)
 			{
-				sb_writef(e->stream,json.c_str());
+				// add to worker queue
+				mWq->RequestAdd(e->content);
 			}
 			else
 			{
-				sb_writef(e->stream,"{}");
+				std::string json;
+				if (mWq->ResponseRemove(json,10))
+				{
+					sb_writef(e->stream,json.c_str());
+				}
+				else
+				{
+					// no data
+					sb_writef(e->stream,"{}");
+				}
 			}
 		}
 
