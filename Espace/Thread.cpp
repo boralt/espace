@@ -2,6 +2,7 @@
 #include <cstdio>
 #include <cstring>
 #include <string>
+#include <sys/time.h>
 
 #include "Thread.h"
 
@@ -81,4 +82,12 @@ void Thread::Lock()
 void Thread::Unlock()
 {
 	mMutex.Unlock();
+}
+
+
+uint64_t Thread::CurrentTimeMsecs()
+{
+	struct timeval time;
+	gettimeofday(&time, NULL);
+	return time.tv_sec * 1000 + time.tv_usec / 1000;
 }

@@ -26,6 +26,9 @@ public:
 	void Lock();
 	void Unlock();
 
+	// some utilities
+	uint64_t CurrentTimeMsecs();
+
 	// internal callback
 	virtual void Run()=0;
 

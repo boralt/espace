@@ -2,6 +2,7 @@
 #include <cstdio>
 #include <cstring>
 #include <string>
+#include <iostream>
 #include "web.h"
 
 static int event_handler(sb_Event *ev)
@@ -99,6 +100,7 @@ int WebServer::HandleRequest(sb_Event *e)
 				std::string json;
 				if (mWq->ResponseRemove(json,10))
 				{
+					//std::cout << json << std::endl;
 					sb_writef(e->stream,json.c_str());
 				}
 				else

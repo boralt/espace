@@ -49,6 +49,7 @@ public:
 	RequestWork()
 	{
 		mWsDebug=NULL;
+		mCount=0;
 	};
 
 	~RequestWork(){};
@@ -56,11 +57,15 @@ public:
 	void DoWork(std::string &json)
 	{
 		RunConfig cfg;
-		std:string ResultJson;
+		std::string ResultJson;
+		std::string tJson;
+		char tbuf[256];
+		uint64_t start_ts,end_ts;
 
 		cfg.debug_server = mWsDebug;
 
-		cfg.WriteDebug("----------------------------------------------------\n");
+		mCount++;
+		cfg.WriteDebug("\n\n----------------Request %d ----------------------\n",mCount);
 		cfg.WriteDebug("Json Request:\n %s\n\n",json.c_str());
 
 		if (!cfg.ParseJson(json))
@@ -69,14 +74,23 @@ public:
 			return;
 		}
 
-		ResultJson="{\"request\":"+json+",";
-		ResultJson+="\"result\":";
-
 		// Run the algorithm
 		//cfg.max_loop = 20000; // temp fpr faster testing
-		ResultJson+=Algorithm(cfg);
+		start_ts=CurrentTimeMsecs();
+		tJson=Algorithm(cfg);
+		end_ts=CurrentTimeMsecs();
 
+		// Build JSON response
+		ResultJson="{";
+		ResultJson+="\"requests_processed\":"+std::to_string(mCount)+",";
+		snprintf(tbuf,255,"%llu.%03llu",end_ts/1000,end_ts%1000);
+		ResultJson+="\"result_ready_time\":"+string(tbuf)+",";
+		ResultJson+="\"processing_time_ms\":"+std::to_string(end_ts-start_ts)+",";
+		ResultJson+="\"request\":"+json+",";
+		ResultJson+="\"result\":"+tJson;
 		ResultJson+="}";
+
+		// Add response to response queue
 		ResponseAdd(ResultJson);
 
 		cfg.WriteDebug("Min Cost = %d\n", min_cost);
@@ -86,10 +100,15 @@ public:
 	void SetDebugServer(WebServer *ws)
 	{
 		mWsDebug=ws;
+
+
+
+
 	}
 
 private:
 	WebServer *mWsDebug;
+	int mCount;
 };
 
 

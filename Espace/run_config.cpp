@@ -102,6 +102,7 @@ void RunConfig::WriteDebug(std::string str)
 	{
 		debug_server->AppendDataBuffer(str);
 	}
+	// to console
 	cout << str;
 }
 
