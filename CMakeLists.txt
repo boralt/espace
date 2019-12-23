@@ -14,6 +14,11 @@ add_executable(espace
         Espace/Espace.cpp
         Espace/run_config.cpp
         Espace/run_config.h
+        Espace/Mutex.h
+        Espace/WorkerQueue.h
+        Espace/WorkerQueue.cpp
+        Espace/Thread.h
+        Espace/Thread.cpp
         Espace/web.h
         Espace/web.cpp
         sandbird/src/sandbird.c

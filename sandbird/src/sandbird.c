@@ -404,7 +404,7 @@ static int sb_stream_emit(sb_Stream *st, sb_Event *e) {
   e->stream = st;
   e->udata = st->server->udata;
   e->server = st->server;
-  e->address = st->address;
+  e->address     = st->address;
   res = e->server->handler(e);
   if (res < 0) return res;
   switch (res) {
@@ -433,7 +433,7 @@ static int sb_stream_recv(sb_Stream *st) {
   for (;;) {
     char buf[4096];
     int err, i, sz;
-
+    int content_len=0;
     /* Receive data */
     sz = recv(st->sockfd, buf, sizeof(buf) - 1, 0);
     if (sz <= 0) {
@@ -469,7 +469,8 @@ static int sb_stream_recv(sb_Stream *st) {
          * assume the request is complete */
         s = find_header_value(st->recv_buf.s, "Content-Length");
         if (s) {
-          st->expected_recv_len = st->recv_buf.len + str_to_uint(s);
+          content_len=str_to_uint(s);
+          st->expected_recv_len = st->recv_buf.len + content_len;
           st->data_idx = st->recv_buf.len;
         } else {
           goto handle_request;
@@ -498,7 +499,13 @@ handle_request:
         url_decode(path, st->recv_buf.s + path_idx, sizeof(path));
         e.type = SB_EV_REQUEST;
         e.method = method;
-        e.path = path;
+        e.path        = path;
+        e.content_len = content_len;
+        e.content = 0;
+        if (content_len < st->recv_buf.len)
+        {
+          e.content = st->recv_buf.s + st->recv_buf.len-content_len;
+        }
         err = sb_stream_emit(st, &e);
         if (err) return err;
         /* No more data needs to be received (nor should it exist) */
@@ -673,7 +680,6 @@ int sb_get_header(sb_Stream *st, const char *field, char *dst, size_t len) {
   dst[n] = '\0';
   return res;
 }
-
 
 int sb_get_var(sb_Stream *st, const char *name, char *dst, size_t len) {
   const char *q, *s = NULL;

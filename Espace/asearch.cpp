@@ -181,8 +181,61 @@ public:
 		return s;
 	}
 
+	std::string ToReprJson()
+	{
+		char sz[100];
+		std::string s;
 
-   bool IsAllAllocated()
+		s="[";
+		for (int ch = 0; ch < cfg.num_channels; ch++)
+		{
+			if (ch>0)
+			{
+				s+=",";
+			}
+			s+="{\"chan_per_fec_bw\":[";
+			for (int f = 0; f < cfg.num_fec; f++)
+			{
+				if (f>0)
+				{
+					s+=",";
+				}
+				s+=std::to_string(bc[ch][f]);
+			}
+			s+="]}";
+		}
+		s+="]";
+		return s;
+	}
+#if 0 // much more verbose version
+	std::string ToReprJson()
+	{
+		char sz[100];
+		std::string s;
+
+		//{"channel":0,"fec":0,"bw":12000}
+		s="[";
+		for (int ch = 0; ch < cfg.num_channels; ch++)
+		{
+			if (ch>0)
+			{
+				s+=",";
+			}
+			for (int f = 0; f < cfg.num_fec; f++)
+			{
+				if (f>0)
+				{
+					s+=",";
+				}
+				s+="{\"channel\":"+std::to_string(ch)+",\"fec\":"+std::to_string(f)+",\"bw\":"+ std::to_string(bc[ch][f])+"}";
+			}
+		}
+		s+="]";
+		return s;
+	}
+#endif
+
+	bool IsAllAllocated()
    {
       return bc[0][0] == 0;
    }
@@ -413,8 +466,29 @@ public:
 	}
 
 
+	std::string ToReprJson()
+	{
+		std::string s;
+		char sz[100];
 
-    bool IsVisited()
+		s="{\"name\":\"results\",\"values\":[";
+		for (int t = 0; t < cfg.num_traffic_classes; t++)
+		{
+			if (t>0)
+			{
+				s+=",";
+			}
+			s += "{\"traffic_class\":"+std::to_string(t)+",\"values\":";
+			s += tcs[t].ToReprJson();
+			s+= "}";
+		}
+		s+="]}";
+		return s;
+	}
+
+
+
+	bool IsVisited()
     {
         return visited.count(ToStr()) > 0;
     }
@@ -678,7 +752,7 @@ int JC(T t)
    return maxL-minL + maxJ;;
 }
 
-void Algorithm(RunConfig &_rc)
+std::string Algorithm(RunConfig &_rc)
 {
 	cfg = _rc;
    Node *head = new Node;
@@ -693,6 +767,9 @@ void Algorithm(RunConfig &_rc)
    while(!st.empty())
    {
       loop++;
+      //if (loop > 10000)  // temp: short circuit for web testing
+      //	break;
+
       if(loop % 1000 == 0)
       {
 			pos += snprintf(buf,BLEN,"Loop %d Size=%d cost=%d recent=%d leafes=%d visited=%zu ignored=%d pruned=%d\n",
@@ -703,7 +780,7 @@ void Algorithm(RunConfig &_rc)
 				pos += snprintf(&buf[pos],BLEN-pos,"%s", pMinCostNode->ToRepr().c_str());
 			}
 			printf("%s\n",buf);
-			_rc.ws->AppendDataBuffer(buf);
+			//_rc.ws->AppendDataBuffer(buf);
 			pos=0;
 			recent_cost = 0;
           
@@ -726,6 +803,8 @@ void Algorithm(RunConfig &_rc)
    }
    printf("Loop %d Size=%d cost=%d recent=%d leafes=%d visited=%zu ignored=%d pruned=%d res=%s\n", loop, (int)st.size(), min_cost, recent_cost, leafs_reached, visited.size(), visited_ignored, pruned, pMinCostNode->ToStr().c_str());
    printf("%s", pMinCostNode->ToRepr().c_str());
+
+	return pMinCostNode->ToReprJson();
 }
 #if 0
 #if !defined(_WIN32)

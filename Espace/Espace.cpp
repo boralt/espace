@@ -2,42 +2,102 @@
 //
 
 #include <iostream>
-// #include <zconf.h>
+#include <unistd.h>
+#include <fstream>
+
+#include "Mutex.h"
 #include "run_config.h"
 #include "web.h"
+#include "WorkerQueue.h"
 
+using namespace std;
 
-extern void Algorithm(RunConfig &_rc);
+extern std::string Algorithm(RunConfig &_rc);
 extern int min_cost;
 
 #define WEB_SERVER_PORT "7777"
 
+
+// for now place in executable dir
+#define CFG_PATH "./config.json"
+
+bool ReadFile(std::string filepath,  std::string &json)
+{
+	std::ifstream infile;
+	std::string line;
+	json="";
+	infile.open (filepath);
+	if (!infile.good())
+	{
+		return false;
+	}
+	while(!infile.eof())
+	{
+		getline(infile,line);
+		//cout<<line;
+		json+=line;
+	}
+	infile.close();
+
+	return true;
+}
+
+class RequestWork : public WorkerQueue
+{
+public:
+	RequestWork(){};
+	~RequestWork(){};
+
+	void DoWork(std::string &json)
+	{
+		RunConfig cfg;
+		std:string ResultJson;
+		char buf[256];
+
+		if (!cfg.ParseJson(json))
+		{
+			cout << "Could not parse json" << endl;
+			return;
+		}
+
+		ResultJson="{\"request\":"+json+",";
+		ResultJson+="\"result\":";
+		ResultJson+=Algorithm(cfg);
+		ResultJson+="}";
+		ResponseAdd(ResultJson);
+
+		sprintf(buf,"Min Cost = %d\n", min_cost);
+		std::cout << buf << std::endl;
+
+		cout << ResultJson << endl;
+	}
+
+private:
+
+};
+
+
 int main()
 {
-	RunConfig rc;
-	WebServer  ws(WEB_SERVER_PORT);
 	char buf[256];
-	std::string json_str;
 
-	rc.ws = &ws;
-#if 0
-	rc.ConfigureDefault();
-#else  // read from json file
-	if (!rc.LoadJsonConfigFromFile())
-	{
-		return 0;
-	}
-#endif
-	// start web server (creates pthread)
+	RequestWork wq;
+	WebServer  ws(WEB_SERVER_PORT,&wq);
+
+	// start worker queue thread
+	wq.Start();
+	// start web server thread
 	ws.Start();
 
-	Algorithm(rc);
-	sprintf(buf,"***********************\nCost = %d\n", min_cost);
-	ws.AppendDataBuffer(buf);
-	std::cout << buf << std::endl;
+	// main process thread does nothing
+	// TODO: need to add kill signal
+	while (1)
+	{
+		MSLEEP(1000);
+	}
 
-//	sleep(30); // let web server run a bit
 	ws.Stop();
+	wq.Stop();
 
 	return 0;
 

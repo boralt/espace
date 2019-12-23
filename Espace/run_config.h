@@ -13,12 +13,8 @@ class RunConfig
 public:
 
 	RunConfig();
-	RunConfig(Json::Value &v);
 
-	bool LoadJsonConfigFromFile();
-
-	void ConfigureDefault();
-
+	bool ParseJson(std::string &json);
 
 	int num_channels;
 	int num_traffic_classes;
@@ -38,13 +34,8 @@ public:
 	std::vector<int> tcLatencyCost; // cost of latency 
 	std::vector<int> tcDropCost;	// cost of packet drop
 
-	WebServer *ws;
-
 private:
-	bool ReadFile();
-	bool ParseJson();
 	bool AddArrayValues(std::vector<int> *vec, const Json::Value values);
-	std::string mJsonData;
 	typedef  std::pair<std::string,std::vector<int> *>  VP;
 	std::map<std::string,std::vector<int> *> mSchemaMap;
 	std::vector<std::string> mCategories;
