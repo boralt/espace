@@ -40,8 +40,4 @@ public:
 	void WriteDebug(const char *fmt, ...);
 	WebServer *debug_server;
 private:
-	bool AddArrayValues(std::vector<int> *vec, const Json::Value values);
-	typedef  std::pair<std::string,std::vector<int> *>  VP;
-	std::map<std::string,std::vector<int> *> mSchemaMap;
-	std::vector<std::string> mCategories;
 };

@@ -12,24 +12,6 @@ RunConfig::RunConfig() :
 	debug_server(NULL),
 	max_loop(0)
 {
-	// Init JSON schema map into vectors
-	// Channels
-	mSchemaMap.insert(VP("ch_latency_ms",&LofC));
-	mSchemaMap.insert(VP("ch_jitter_ms",&JofC));
-	mSchemaMap.insert(VP("ch_bw_kbps",&BoC));
-	mSchemaMap.insert(VP("ch_pkt_drop",&DoC));
-	// traffic_classes
-	mSchemaMap.insert(VP("tc_bw_kbps",&Treq));
-	mSchemaMap.insert(VP("tc_jitter_cost",&tcJitterCost));
-	mSchemaMap.insert(VP("tc_latency_cost",&tcLatencyCost));
-	mSchemaMap.insert(VP("tc_pkt_drop_cost",&tcDropCost));
-	// fec
-	mSchemaMap.insert(VP("fec_multiplier",&FecMult));
-	mSchemaMap.insert(VP("fec_divider",&FecDiv));
-
-	mCategories.emplace_back("channels");
-	mCategories.emplace_back("traffic_classes");
-	mCategories.emplace_back("fec");
 
 }
 
@@ -43,56 +25,105 @@ bool RunConfig::ParseJson(std::string &json)
 
 	if (!reader.parse(json, root))
 	{
+		cout << "illegal JSON" << endl;
 		return false;
 	}
 
-	for (x=0;x<mCategories.size();x++)
+	cat = root["channels"];
+	for (x = 0; x < cat.size(); x++)
 	{
-		sz=0;
-		cat = root[mCategories[x]];
-		for (y = 0; y < cat.size(); y++)
+		//cout << cat[x] << endl;
+		if (cat[x]["latency_ms"].empty())
 		{
-			//cout << cat[x]["name"] << endl;
-			it = mSchemaMap.find(cat[y]["name"].asString());
-			if (it != mSchemaMap.end())
-			{
-				if (!AddArrayValues(it->second, cat[y]["values"]))
-				{
-					return false;
-				}
-				if (!sz)
-				{
-					sz = it->second->size();
-				}
-				else if (sz != it->second->size())
-				{
-					cout << "Error: array size mismatch in JSON for " <<  it->first << endl;
-					return false;
-				}
-			}
+			cout << "Expecting 'channels:latency_ms'" << endl;
+			return false;
 		}
+		LofC.push_back(cat[x]["latency_ms"].asInt());
+
+		if (cat[x]["bw_kbps"].empty())
+		{
+			cout << "Expecting 'channels:bw_kbps'" << endl;
+			LT;
+			return false;
+		}
+		BoC.push_back(cat[x]["bw_kbps"].asInt());
+
+		if (cat[x]["drop_percent"].empty())
+		{
+			cout << "Expecting 'channels:drop_percent'" << endl;
+			LT;
+			return false;
+		}
+		DoC.push_back(cat[x]["drop_percent"].asInt());
+
+		if (cat[x]["jitter_ms"].empty())
+		{
+			cout << "Expecting 'channels:jitter_ms'" << endl;
+			LT;
+			return false;
+		}
+		JofC.push_back(cat[x]["jitter_ms"].asInt());
 	}
 
-	// set the size values
+	cat = root["traffic_classes"];
+	for (x = 0; x < cat.size(); x++)
+	{
+		//cout << cat[x] << endl;
+		if (cat[x]["latency_cost"].empty())
+		{
+			cout << "Expecting 'traffic_classes:latency_cost'" << endl;
+			return false;
+		}
+		tcLatencyCost.push_back(cat[x]["latency_cost"].asInt());
+
+		if (cat[x]["bw_kbps"].empty())
+		{
+			cout << "Expecting 'traffic_classes:bw_kbps'" << endl;
+			return false;
+		}
+		Treq.push_back(cat[x]["bw_kbps"].asInt());
+
+		if (cat[x]["drop_cost"].empty())
+		{
+			cout << "Expecting 'traffic_classes:drop_cost'" << endl;
+			return false;
+		}
+		tcDropCost.push_back(cat[x]["drop_cost"].asInt());
+
+		if (cat[x]["jitter_cost"].empty())
+		{
+			cout << "Expecting 'traffic_classes:jitter_cost'" << endl;
+						return false;
+		}
+		tcJitterCost.push_back(cat[x]["jitter_cost"].asInt());
+	}
+
+	cat = root["fec"];
+	for (x = 0; x < cat.size(); x++)
+	{
+		//cout << cat[x] << endl;
+		if (cat[x]["multiplier"].empty())
+		{
+			cout << "Expecting 'fec:multiplier'" << endl;
+			LT;
+			return false;
+		}
+		FecMult.push_back(cat[x]["multiplier"].asInt());
+
+		if (cat[x]["divider"].empty())
+		{
+			cout << "Expecting 'fec:divider'" << endl;
+			return false;
+		}
+		FecDiv.push_back(cat[x]["divider"].asInt());
+	}
+
+		// set the size values
 	try_chunk = root["try_chunk"].asInt();
 	num_traffic_classes = Treq.size();
 	num_fec = FecMult.size();
 	num_channels = LofC.size();
 
-	return true;
-}
-
-bool RunConfig::AddArrayValues(std::vector<int> *vec, const Json::Value values)
-{
-	int x;
-	if (!values.isArray())
-	{
-		return false;
-	}
-	for (x=0;x<values.size();x++)
-	{
-		vec->push_back(values[x].asInt());
-	}
 	return true;
 }
 
