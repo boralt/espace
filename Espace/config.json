@@ -3,8 +3,14 @@
   "channels":[
     {"latency_ms":1000,"jitter_ms":5,"bw_kbps":500,"drop_percent":1},
     {"latency_ms":2000,"jitter_ms":5,"bw_kbps":500,"drop_percent":1},
-    {"latency_ms":3000,"jitter_ms":5,"bw_kbps":500,"drop_percent":1}],
+    {"latency_ms":3000,"jitter_ms":5,"bw_kbps":500,"drop_percent":1},
+    {"latency_ms":4000,"jitter_ms":5,"bw_kbps":500,"drop_percent":1},
+    {"latency_ms":5000,"jitter_ms":5,"bw_kbps":500,"drop_percent":1}],
   "traffic_classes": [
+    {"latency_cost":13,"jitter_cost": 13,"drop_cost": 13,"bw_kbps":1000},
+    {"latency_cost":12,"jitter_cost": 12,"drop_cost": 12,"bw_kbps":2000},
+    {"latency_cost":11,"jitter_cost": 11,"drop_cost": 11,"bw_kbps":3000},
+    {"latency_cost":10,"jitter_cost": 10,"drop_cost": 10,"bw_kbps":4000},
     {"latency_cost":9,"jitter_cost": 9,"drop_cost": 9,"bw_kbps":5000},
     {"latency_cost":8,"jitter_cost": 8,"drop_cost": 8,"bw_kbps":6000},
     {"latency_cost":7,"jitter_cost": 7,"drop_cost": 7,"bw_kbps":7000},

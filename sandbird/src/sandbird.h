@@ -34,7 +34,6 @@ struct sb_Event {
   const char *path;
   // content for POST request with ContentLength
   const char *content;
-  int         content_len;
 };
 
 struct sb_Options {

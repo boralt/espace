@@ -95,6 +95,7 @@ struct sb_Stream {
   sb_Buffer send_buf;         /* Data waiting to be sent to client */
   FILE *send_fp;              /* File currently being sent to client */
   sb_Stream *next;            /* Next stream in linked list */
+  int content_length;
 };
 
 struct sb_Server {
@@ -279,12 +280,17 @@ static int sb_buffer_reserve(sb_Buffer *buf, size_t n) {
 
 
 static int sb_buffer_push_char(sb_Buffer *buf, char chr) {
-  if (buf->len == buf->cap) {
-    int err = sb_buffer_reserve(buf, (buf->cap << 1) | (!buf->cap));
-    if (err) return err;
+  if (buf->len == buf->cap)
+  {
+	  int err = sb_buffer_reserve(buf, (buf->cap << 1) | (!buf->cap));
+	  if (err)
+	  {
+		  printf("ERROR: could not reserve memory\n");
+		  return err;
+	  }
   }
-  buf->s[buf->len++] = chr;
-  return SB_ESUCCESS;
+	buf->s[buf->len++] = chr;
+	return SB_ESUCCESS;
 }
 
 
@@ -433,10 +439,9 @@ static int sb_stream_recv(sb_Stream *st) {
   for (;;) {
     char buf[4096];
     int err, i, sz;
-    int content_len=0;
-    /* Receive data */
+	  /* Receive data */
     sz = recv(st->sockfd, buf, sizeof(buf) - 1, 0);
-    if (sz <= 0) {
+	  if (sz <= 0) {
       /* Disconnected? */
       if (sz == 0 || errno != EWOULDBLOCK) {
         sb_stream_close(st);
@@ -469,8 +474,8 @@ static int sb_stream_recv(sb_Stream *st) {
          * assume the request is complete */
         s = find_header_value(st->recv_buf.s, "Content-Length");
         if (s) {
-          content_len=str_to_uint(s);
-          st->expected_recv_len = st->recv_buf.len + content_len;
+          st->content_length=str_to_uint(s);
+          st->expected_recv_len = st->recv_buf.len + st->content_length;
           st->data_idx = st->recv_buf.len;
         } else {
           goto handle_request;
@@ -500,13 +505,12 @@ handle_request:
         e.type = SB_EV_REQUEST;
         e.method = method;
         e.path        = path;
-        e.content_len = content_len;
-        e.content = 0;
-        if (content_len < st->recv_buf.len)
+			e.content = 0;
+        if (st->content_length < st->recv_buf.len)
         {
-          e.content = st->recv_buf.s + st->recv_buf.len-content_len;
+          e.content = st->recv_buf.s + st->recv_buf.len-st->content_length;
         }
-        err = sb_stream_emit(st, &e);
+			err = sb_stream_emit(st, &e);
         if (err) return err;
         /* No more data needs to be received (nor should it exist) */
         return SB_ESUCCESS;
