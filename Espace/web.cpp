@@ -98,10 +98,11 @@ int WebServer::HandleRequest(sb_Event *e)
 			else // GET
 			{
 				int c=0;
-				std::string json,json2;
+				std::string json,json2,result;
 				json = "\"results\":[";
-				while (mWq->ResponsePeek(json, 0))
+				while (mWq->ResponsePeek(json2, 0))
 				{
+					json+=json2;
 					json += ",";
 					c++;
 					mWq->ResponsePop();
@@ -111,11 +112,11 @@ int WebServer::HandleRequest(sb_Event *e)
 					json.pop_back(); // remove trailing ","
 				}
 				json+="]}";
-				json2="{\"num_results\":"+std::to_string(c)+",";
-				json2+="\"num_pending\":"+std::to_string(mWq->RequestQueueSize()+mWq->ResponseQueueSize())+",";
-				json2+="\"total_requests\":"+std::to_string(mWq->TotalRequests())+",";
-				json2+=json;
-				sb_writef(e->stream, json2.c_str());
+				result="{\"num_results\":"+std::to_string(c)+",";
+				result+="\"num_pending\":"+std::to_string(mWq->RequestQueueSize()+mWq->ResponseQueueSize())+",";
+				result+="\"total_requests\":"+std::to_string(mWq->TotalRequests())+",";
+				result+=json;
+				sb_writef(e->stream, result.c_str());
 			}
 		}
 	}
