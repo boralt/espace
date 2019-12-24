@@ -32,7 +32,7 @@ void WebServer::Run()
 	printf("Web server running on localhost:%s\n",mOptions.port);
 	while (!IsStop())
 	{
-		sb_poll_server(mServer, 1000);
+		sb_poll_server(mServer, 100);
 	}
 }
 
@@ -88,29 +88,36 @@ int WebServer::HandleRequest(sb_Event *e)
 		}
 		else // using message queue
 		{
-			sb_send_header(e->stream, "Content-Type", "text/json");
+			//sb_send_header(e->stream, "Content-Type", "text/json");
 			sb_send_status(e->stream, 200, "OK");
 			if (!strncmp(e->method,"POST",4) && e->content)
 			{
 				// add to worker queue
-				mWq->RequestAdd(e->content);
+				mWq->RequestPush(e->content);
 			}
-			else
+			else // GET
 			{
-				std::string json;
-				if (mWq->ResponseRemove(json,10))
+				int c=0;
+				std::string json,json2;
+				json = "\"results\":[";
+				while (mWq->ResponsePeek(json, 0))
 				{
-					//std::cout << json << std::endl;
-					sb_writef(e->stream,json.c_str());
+					json += ",";
+					c++;
+					mWq->ResponsePop();
 				}
-				else
+				if (c)
 				{
-					// no data
-					sb_writef(e->stream,"{}");
+					json.pop_back(); // remove trailing ","
 				}
+				json+="]}";
+				json2="{\"num_results\":"+std::to_string(c)+",";
+				json2+="\"num_pending\":"+std::to_string(mWq->RequestQueueSize()+mWq->ResponseQueueSize())+",";
+				json2+="\"total_requests\":"+std::to_string(mWq->TotalRequests())+",";
+				json2+=json;
+				sb_writef(e->stream, json2.c_str());
 			}
 		}
-
 	}
 	return SB_RES_OK;
 }

@@ -19,21 +19,28 @@ public:
 
 	void Run();
 
-	// Add a request to queue
-	void RequestAdd(std::string json);
-	// Remove request form queue. Wait up to msecs for data
-	bool RequestRemove(std::string &json, int msecs);
+	// Request Queue is processed by DoWork()
+	void RequestPush(std::string json);
+	bool RequestPeek(std::string &json, int msecs);
+	void RequestPop();
 	int RequestQueueSize();
+	uint64_t TotalRequests();
 
-	// Add a request to queue
-	void ResponseAdd(std::string json);
-	// Remove request form queue. Wait up to msecs for data
-	bool ResponseRemove(std::string &json, int msecs);
+	// Response Queue is result of DoWork()
+	void ResponsePush(std::string json);
+	bool ResponsePeek(std::string &json, int msecs);
+	void ResponsePop();
 	int ResponseQueueSize();
 
 	virtual void DoWork(std::string &json)=0;
 
 private:
+	void Push(std::queue<std::string> *q, std::string json);
+	bool Peek(std::queue<std::string> *q, std::string &json, int msecs);
+	void Pop(std::queue<std::string> *q);
+	int Size(std::queue<std::string> *q);
+
 	std::queue<std::string> mRequestQueue;
 	std::queue<std::string> mResponseQueue;
+	uint64_t mTotalRequests;
 };

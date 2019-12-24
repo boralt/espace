@@ -75,14 +75,13 @@ public:
 		}
 
 		// Run the algorithm
-		//cfg.max_loop = 20000; // temp fpr faster testing
+		//cfg.max_loop = 50000; // temp fpr faster testing
 		start_ts=CurrentTimeMsecs();
 		tJson=Algorithm(cfg);
 		end_ts=CurrentTimeMsecs();
 
 		// Build JSON response
 		ResultJson="{";
-		ResultJson+="\"requests_processed\":"+std::to_string(mCount)+",";
 		snprintf(tbuf,255,"%llu.%03llu",end_ts/1000,end_ts%1000);
 		ResultJson+="\"result_ready_time\":"+string(tbuf)+",";
 		ResultJson+="\"processing_time_ms\":"+std::to_string(end_ts-start_ts)+",";
@@ -91,7 +90,7 @@ public:
 		ResultJson+="}";
 
 		// Add response to response queue
-		ResponseAdd(ResultJson);
+		ResponsePush(ResultJson);
 
 		cfg.WriteDebug("Min Cost = %d\n", min_cost);
 		cfg.WriteDebug("Json Result:\n %s\n",ResultJson.c_str());

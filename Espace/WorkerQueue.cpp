@@ -3,7 +3,7 @@
 
 WorkerQueue::WorkerQueue()
 {
-
+	mTotalRequests=0;
 }
 
 WorkerQueue::~WorkerQueue()
@@ -11,20 +11,34 @@ WorkerQueue::~WorkerQueue()
 
 }
 
-int WorkerQueue::RequestQueueSize()
+int WorkerQueue::Size(std::queue<std::string> *q)
 {
 	int sz=0;
 	Lock();
-	sz=mRequestQueue.size();
+	sz=q->size();
 	Unlock();
 	return sz;
 }
 
-bool WorkerQueue::RequestRemove(std::string &json, int msecs)
+void WorkerQueue::Pop(std::queue<std::string> *q)
+{
+	Lock();
+	q->pop();
+	Unlock();
+}
+
+void WorkerQueue::Push(std::queue<std::string> *q, std::string json)
+{
+	Lock();
+	q->push(json);
+	Unlock();
+}
+
+bool WorkerQueue::Peek(std::queue<std::string> *q, std::string &json, int msecs)
 {
 	bool rc=false;
 
-	while (RequestQueueSize() == 0)
+	while (Size(q) == 0)
 	{
 		// wait for data
 		if (msecs<=0)
@@ -36,10 +50,9 @@ bool WorkerQueue::RequestRemove(std::string &json, int msecs)
 	}
 
 	Lock();
-	if (!mRequestQueue.empty())
+	if (!q->empty())
 	{
-		json = mRequestQueue.front();
-		mRequestQueue.pop();
+		json = q->front();
 		rc=true;
 	}
 	Unlock();
@@ -47,57 +60,55 @@ bool WorkerQueue::RequestRemove(std::string &json, int msecs)
 }
 
 
-void WorkerQueue::RequestAdd(std::string json)
+int WorkerQueue::RequestQueueSize()
 {
-	Lock();
-	mRequestQueue.push(json);
-	Unlock();
+	return Size(&mRequestQueue);
 }
 
+void WorkerQueue::RequestPop()
+{
+	Pop(&mRequestQueue);
+}
+
+
+bool WorkerQueue::RequestPeek(std::string &json, int msecs)
+{
+	return Peek(&mRequestQueue,json,msecs);
+}
+
+
+void WorkerQueue::RequestPush(std::string json)
+{
+	mTotalRequests++;
+	return Push(&mRequestQueue,json);
+}
+
+uint64_t WorkerQueue::TotalRequests()
+{
+	return mTotalRequests;
+}
 
 int WorkerQueue::ResponseQueueSize()
 {
-	int sz=0;
-	Lock();
-	sz=mResponseQueue.size();
-	Unlock();
-	return sz;
+	return Size(&mResponseQueue);
 }
 
-bool WorkerQueue::ResponseRemove(std::string &json, int msecs)
+void WorkerQueue::ResponsePop()
 {
-	bool rc=false;
-
-	while (ResponseQueueSize() == 0)
-	{
-		// wait for data
-		if (msecs<=0)
-		{
-			return false;
-		}
-		msecs-=10;
-		MSLEEP(10);
-	}
-
-	Lock();
-	if (!mResponseQueue.empty())
-	{
-		json = mResponseQueue.front();
-		mResponseQueue.pop();
-		rc=true;
-	}
-	Unlock();
-	return rc;
+	Pop(&mResponseQueue);
 }
 
 
-void WorkerQueue::ResponseAdd(std::string json)
+bool WorkerQueue::ResponsePeek(std::string &json, int msecs)
 {
-	Lock();
-	mResponseQueue.push(json);
-	Unlock();
+	return Peek(&mResponseQueue,json,msecs);
 }
 
+
+void WorkerQueue::ResponsePush(std::string json)
+{
+	return Push(&mResponseQueue,json);
+}
 
 void WorkerQueue::Run()
 {
@@ -105,9 +116,10 @@ void WorkerQueue::Run()
 
 	while (!IsStop())
 	{
-		if (RequestRemove(json, 1000))
+		if (RequestPeek(json, 1000))
 		{
 			DoWork(json);
+			RequestPop();
 		}
 	}
 }

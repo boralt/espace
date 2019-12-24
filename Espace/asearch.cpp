@@ -487,7 +487,7 @@ public:
 		std::string s;
 		char sz[100];
 
-		s="{\"name\":\"results\",\"values\":[";
+		s="{\"values\":[";
 		for (int t = 0; t < cfg.num_traffic_classes; t++)
 		{
 			if (t>0)
