@@ -2,6 +2,7 @@
 #pragma once
 
 #include "Mutex.h"
+#include <cstdint>
 
 #if !defined(_WIN32)
 #include <pthread.h>

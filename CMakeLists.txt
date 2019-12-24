@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.10)
 project(espace)
 
 set(CMAKE_CXX_STANDARD 14)
@@ -26,3 +26,12 @@ add_executable(espace
         json/json/json-forwards.h
         json/json/json.h
         json/jsoncpp.cpp)
+
+find_package(Threads REQUIRED)
+if(THREADS_HAVE_PTHREAD_ARG)
+  target_compile_options(espace PUBLIC "-pthread")
+endif()
+if(CMAKE_THREAD_LIBS_INIT)
+  target_link_libraries(espace "${CMAKE_THREAD_LIBS_INIT}")
+endif()
+
