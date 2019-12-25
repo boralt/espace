@@ -121,11 +121,16 @@ class  T
 {
 public:
 
-   T()
+   T() :
+    drop(0),
+    latency(0),
+    jitter(0),
+    cost(0),
+    nTotal(0)
    {
           
       //memset(bc, 0, sizeof(bc));
-	   for (int ch = 0; ch < cfg.num_channels; ch++)
+	   for (unsigned int ch = 0; ch < cfg.num_channels; ch++)
 	   {
 		   bc.push_back(vector<int>(cfg.num_fec, 0));
 	   }
@@ -154,11 +159,11 @@ public:
     {
         std::string s;
         char sz[100];
-        for(int ch=0; ch < cfg.num_channels; ch++)
+        for(unsigned int ch=0; ch < cfg.num_channels; ch++)
         {
             sprintf(sz, "%d[", ch);
             s+= sz;
-            for(int f=0; f < cfg.num_fec; f++)
+            for(unsigned int f=0; f < cfg.num_fec; f++)
             {
                 sprintf(sz, "%d:%d", f, bc[ch][f]);
                 s+= sz;
@@ -175,7 +180,7 @@ public:
 		sprintf(sz, "====  TC %d === drop/lat/jit/cost %d %d %d %d\n", tc, drop, latency, jitter, cost);
 		s += sz;
 		s += "CH/FEC   ";
-		for (int f = 0; f < cfg.num_fec; f++)
+		for (unsigned int f = 0; f < cfg.num_fec; f++)
 		{
 			sprintf(sz, "    %d    ", f);
 			s += sz;
@@ -183,11 +188,11 @@ public:
 
 
 		s += "\n";
-		for (int ch = 0; ch < cfg.num_channels; ch++)
+		for (unsigned int ch = 0; ch < cfg.num_channels; ch++)
 		{
 			sprintf(sz, "%d        ", ch);
 			s += sz;
-			for (int f = 0; f < cfg.num_fec; f++)
+			for (unsigned int f = 0; f < cfg.num_fec; f++)
 			{
 				sprintf(sz, " %06d ", bc[ch][f]);
 				s += sz;
@@ -199,18 +204,18 @@ public:
 
 	std::string ToReprJson()
 	{
-		char sz[100];
+		//char sz[100];
 		std::string s;
 
 		s="[";
-		for (int ch = 0; ch < cfg.num_channels; ch++)
+		for (unsigned int ch = 0; ch < cfg.num_channels; ch++)
 		{
 			if (ch>0)
 			{
 				s+=",";
 			}
 			s+="{\"chan_per_fec_bw\":[";
-			for (int f = 0; f < cfg.num_fec; f++)
+			for (unsigned int f = 0; f < cfg.num_fec; f++)
 			{
 				if (f>0)
 				{
@@ -285,7 +290,7 @@ public:
    //      return nTotal;
 
 	  int n = 0;
-      for(int f = 0; f < cfg.num_fec; f++)
+      for(unsigned int f = 0; f < cfg.num_fec; f++)
       {
          n += bc[c][f] * cfg.FecMult[f]/FEC_DIVIDER;
       }
@@ -334,9 +339,9 @@ public:
       if (bc[0][0])
          drop += bc[0][0];
       
-      for (int c=1; c<cfg.num_channels; c++)
+      for (unsigned int c=1; c<cfg.num_channels; c++)
       {
-         for (int f=0; f < cfg.num_fec; f++)
+         for (unsigned int f=0; f < cfg.num_fec; f++)
          {
             if(bc[c][f])
             {
@@ -361,9 +366,9 @@ public:
 
       int maxLatency = 0;
       
-      for (int c=0; c<cfg.num_channels; c++)
+      for (unsigned int c=0; c<cfg.num_channels; c++)
       {
-         for (int f=0; f < cfg.num_fec; f++)
+         for (unsigned int f=0; f < cfg.num_fec; f++)
          {
             if(bc[c][f])
             {
@@ -391,9 +396,9 @@ public:
       int jitterOnMax = 0;
       int jitterOnMin = 0;
       
-      for (int c=0; c<cfg.num_channels; c++)
+      for (unsigned int c=0; c<cfg.num_channels; c++)
       {
-         for (int f=0; f < cfg.num_fec; f++)
+         for (unsigned int f=0; f < cfg.num_fec; f++)
          {
             if(bc[c][f])
             {
@@ -435,17 +440,17 @@ public:
 class Node
 {
 public:
-   Node()
+   Node() :
+       changed_fec(0),
+       changed_tc(0)
    {
       cost = 0;
 	  //tcs.resize(cfg.num_traffic_classes);
-      for(int t = 0; t < cfg.num_traffic_classes; t++)
+      for(unsigned int t = 0; t < cfg.num_traffic_classes; t++)
       {
 		 tcs.push_back(T());
          tcs[t].init(cfg.Treq[t], t);
       }
-      changed_ch = 0;
-      changed_fec = 0;
 
    }
 
@@ -458,7 +463,7 @@ public:
         std::string s;
         char sz[100];
         
-        for(int t = 0; t < cfg.num_traffic_classes; t++)
+        for(unsigned int t = 0; t < cfg.num_traffic_classes; t++)
         {
             sprintf(sz, "%d:{", t );
             s += sz;
@@ -485,10 +490,10 @@ public:
 	std::string ToReprJson()
 	{
 		std::string s;
-		char sz[100];
+		// char sz[100];
 
 		s="{\"values\":[";
-		for (int t = 0; t < cfg.num_traffic_classes; t++)
+		for (unsigned int t = 0; t < cfg.num_traffic_classes; t++)
 		{
 			if (t>0)
 			{
@@ -516,7 +521,7 @@ public:
 
    int GetUncomplited()
    {
-      for(int t=0;t < cfg.num_traffic_classes; t++)
+      for(unsigned int t=0;t < cfg.num_traffic_classes; t++)
       {
          if (!tcs[t].IsAllAllocated())
             return t;
@@ -532,9 +537,9 @@ public:
    Node *GetNextDescendent(Node *prevDescendent)
    {
 
-      int prev_ch = prevDescendent->changed_ch;
-      int prev_fec = prevDescendent->changed_fec;
-      int prev_tc = prevDescendent->changed_tc;
+      unsigned int prev_ch = prevDescendent->changed_ch;
+      unsigned int prev_fec = prevDescendent->changed_fec;
+      unsigned int prev_tc = prevDescendent->changed_tc;
       if(prev_fec < (cfg.num_fec-1))
       {
          Node *pNextNode = new Node(*this);
@@ -571,7 +576,7 @@ public:
          {
             if(ChFull(ch))
                continue;
-            for(int fec = 0; fec < cfg.num_fec; fec++)
+            for(unsigned int fec = 0; fec < cfg.num_fec; fec++)
             {
                Node *pNode = new Node(*this);
                pNode->save_str = "";
@@ -618,14 +623,14 @@ public:
 	   Node heristicNode(*this);
 	   int tc = heristicNode.GetUncomplited();
 	   int n = 0;
-	   int chMin = 1;
+       unsigned int chMin = 1;
 
 
 	   while (tc >= 0 && chMin < cfg.num_channels)
 	   {
 		  
 
-		   for (int ch = chMin; ch < cfg.num_channels; )
+		   for (unsigned int ch = chMin; ch < cfg.num_channels; )
 		   {
 
 			   if (heristicNode.ChFull(ch))
@@ -652,7 +657,7 @@ public:
    int SumHeristics()
    {
 	   int heristics = 0;
-	   for (int t = 0; t < cfg.num_traffic_classes; t++)
+	   for (unsigned int t = 0; t < cfg.num_traffic_classes; t++)
 	   {
 		   heristics += tcs[t].CalcHeristics();
 	   }
@@ -664,7 +669,7 @@ public:
    {
       int chBw = 0;
       
-      for(int tc=0; tc < cfg.num_traffic_classes; tc++)
+      for(unsigned int tc=0; tc < cfg.num_traffic_classes; tc++)
       {
          chBw += tcs[tc].B(ch);
       }
@@ -688,7 +693,7 @@ public:
          return cost;
       
       cost = 0;
-      for(int t=0;t < cfg.num_traffic_classes; t++)
+      for(unsigned int t=0;t < cfg.num_traffic_classes; t++)
       {
          cost += tcs[t].CalcCost(false); 
       }
@@ -712,7 +717,7 @@ public:
 int LC(T t)
 {
    int maxL = 0;
-   for (int c=0; c<cfg.num_channels; c++)
+   for (unsigned int c=0; c<cfg.num_channels; c++)
    {
       int l = L(c);
       if (t.B(c))
@@ -729,7 +734,7 @@ int LD(T t)
 {
    int totalD = 0;
    int nChannels=0;
-   for (int c=0; c<cfg.num_channels; c++)
+   for (unsigned int c=0; c<cfg.num_channels; c++)
    {
       int d = D(c);
       if (t.B(c))
@@ -750,7 +755,7 @@ int JC(T t)
    int maxL = 0;
    int minL = 0;
    int maxJ = 0;
-   for (int c=0; c<cfg.num_channels; c++)
+   for (unsigned int c=0; c<cfg.num_channels; c++)
    {
       if( t.B(c))
       {
@@ -775,7 +780,7 @@ std::string Algorithm(RunConfig &_rc)
 	Node *head = new Node;
    stack<Node *> st;
    st.push(head);
-   int loop = 0;
+   unsigned int loop = 0;
    Node* pPrintedNode = 0;
 
 	while(!st.empty())

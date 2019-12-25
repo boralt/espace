@@ -2,7 +2,10 @@
 //
 
 #include <iostream>
+
+#if !defined(_WIN32)
 #include <unistd.h>
+#endif
 #include <fstream>
 
 #include "Mutex.h"
@@ -111,6 +114,7 @@ private:
 };
 
 
+#if !defined(_SIMPLE_RUN)
 int main()
 {
 	char buf[256];
@@ -143,6 +147,20 @@ int main()
 	return 0;
 
 }
+#else
+int main()
+{
+	std::string s;
+	ReadFile(CFG_PATH, s);
+	RequestWork r;
+	r.DoWork(s);
+	return 0;
+
+}
+
+
+#endif
+
 
 // Run program: Ctrl + F5 or Debug > Start Without Debugging menu
 // Debug program: F5 or Debug > Start Debugging menu

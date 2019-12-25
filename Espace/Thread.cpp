@@ -2,7 +2,10 @@
 #include <cstdio>
 #include <cstring>
 #include <string>
+#if !defined(_WIN32)
 #include <sys/time.h>
+#endif
+#include <ctime>
 
 #include "Thread.h"
 
@@ -87,7 +90,15 @@ void Thread::Unlock()
 
 uint64_t Thread::CurrentTimeMsecs()
 {
+#if !defined(_WIN32)
 	struct timeval time;
 	gettimeofday(&time, NULL);
 	return time.tv_sec * 1000 + time.tv_usec / 1000;
+#else
+	SYSTEMTIME time;
+	GetSystemTime(&time);
+	LONG time_ms = (time.wSecond * 1000) + time.wMilliseconds;
+	return time_ms;
+#endif
+
 }

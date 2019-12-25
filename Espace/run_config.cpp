@@ -21,7 +21,7 @@ bool RunConfig::ParseJson(std::string &json)
 	Json::Value root;
 	Json::Value cat;
 	std::map<std::string,std::vector<int> *>::iterator it;
-	int x,y,sz;
+	unsigned int x;
 
 	if (!reader.parse(json, root))
 	{

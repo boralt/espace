@@ -3,6 +3,7 @@
 #include <cstring>
 #include <string>
 #include <iostream>
+#include <ctime>
 #include "web.h"
 
 static int event_handler(sb_Event *ev)
