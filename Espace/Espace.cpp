@@ -148,8 +148,11 @@ int main()
 
 }
 #else
+
+extern int min_cost;
 int main()
 {
+	min_cost = 25000;
 	std::string s;
 	ReadFile(CFG_PATH, s);
 	RequestWork r;

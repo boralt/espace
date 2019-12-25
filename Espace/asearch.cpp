@@ -51,7 +51,7 @@ Node *pMinCostNode = 0;
 void Init(RunConfig &_rc)
 {
 	cfg=_rc;
-	min_cost=0;
+	// min_cost=0;
 	recent_cost=0;
 	leafs_reached=0;
 	visited_ignored=0;
@@ -820,12 +820,19 @@ std::string Algorithm(RunConfig &_rc)
 
    }
 
-	cfg.WriteDebug("Loop %d Size=%d cost=%d recent=%d leafes=%d visited=%zu ignored=%d pruned=%d res=%s\n",
-				loop, (int)st.size(), min_cost, recent_cost, leafs_reached, visited.size(),
-				visited_ignored, pruned, pMinCostNode->ToStr().c_str());
-	cfg.WriteDebug("%s\n", pMinCostNode->ToRepr().c_str());
+    if (pMinCostNode)
+    {
+        cfg.WriteDebug("Loop %d Size=%d cost=%d recent=%d leafes=%d visited=%zu ignored=%d pruned=%d res=%s\n",
+            loop, (int)st.size(), min_cost, recent_cost, leafs_reached, visited.size(),
+            visited_ignored, pruned, pMinCostNode->ToStr().c_str());
+        cfg.WriteDebug("%s\n", pMinCostNode->ToRepr().c_str());
 
-	return pMinCostNode->ToReprJson();
+        return pMinCostNode->ToReprJson();
+    }
+    else
+    {
+        return "{\"res\":\"not found\"}";
+    }
 }
 #if 0
 #if !defined(_WIN32)
