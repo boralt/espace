@@ -4,17 +4,63 @@
 #include <stdio.h>
 #include <stack>
 #include <unordered_set>
+#include <set>
 #include <string>
 
 #include "run_config.h"
 
 using namespace std;
 
+class HashCollector
+{
+public:
+	HashCollector() 
+	{
+		prime = 1099511628211UL;
+		hash = 14695981039346656037UL;
+	}
+
+	void Add(uint8_t val)
+	{
+		hash = hash ^ val;
+		hash = hash * prime;
+	}
+
+	void Add(int val)
+	{
+		uint8_t octet;
+		for(int i=0; i < 4; i++)
+		{
+			octet =(uint8_t) val % 256;
+			Add(octet);
+			val /= 256;
+		}
+	}
+
+	void Add(unsigned int val)
+	{
+		uint8_t octet;
+		for (int i = 0; i < 4; i++)
+		{
+			octet = (uint8_t)val % 256;
+			Add(octet);
+			val /= 256;
+		}
+	}
+
+
+	uint64_t hash;
+	uint64_t prime;
+	
+};
+
+
 // TODO: cfg should not be global
 RunConfig cfg;
 
 // TODO: should not be global
 std::unordered_set<std::string> visited; 
+std::set<uint64_t> visited_hashes;
 
 #if 0
 
@@ -58,6 +104,7 @@ void Init(RunConfig &_rc)
 	pruned=0;
 	pMinCostNode=NULL;
 	visited.clear();
+	visited_hashes.clear();
 }
 
 #if 0
@@ -172,6 +219,20 @@ public:
         }
         return s;
     }
+
+	void
+	ToHash(HashCollector& hc)
+	{
+		for (unsigned int ch = 0; ch < cfg.num_channels; ch++)
+		{
+			for (unsigned int f = 0; f < cfg.num_fec; f++)
+			{
+				hc.Add(bc[ch][f]);
+			}
+			
+		}
+
+	}
 
 	std::string ToRepr()
 	{
@@ -442,7 +503,8 @@ class Node
 public:
    Node() :
        changed_fec(0),
-       changed_tc(0)
+       changed_tc(0),
+	   my_hash(0)
    {
       cost = 0;
 	  //tcs.resize(cfg.num_traffic_classes);
@@ -473,6 +535,20 @@ public:
         save_str = s;
         return save_str;
     }
+
+	uint64_t ToHash()
+	{
+		if (my_hash)
+			return my_hash;
+
+		HashCollector hc;
+		for (unsigned int t = 0; t < cfg.num_traffic_classes; t++)
+		{
+			tcs[t].ToHash(hc);
+		}
+		my_hash = hc.hash;
+		return my_hash;
+	}
 
 	std::string ToRepr()
 	{
@@ -511,12 +587,20 @@ public:
 
 	bool IsVisited()
     {
+#if STRONG_TRACKING
         return visited.count(ToStr()) > 0;
+#else
+		return visited_hashes.count(ToHash());
+#endif
     }
 
     void SetVisited()
     {
-        visited.insert(ToStr());
+#if STRONG_TRACKING      
+		visited.insert(ToStr());
+#else
+		visited_hashes.insert(ToHash());
+#endif
     }
 
    int GetUncomplited()
@@ -565,7 +649,6 @@ public:
 
    int PopulateNeighbours(stack<Node *> &st)
    {
-
       int tc = GetUncomplited();
       int n = 0;
 	  bool bHadPruned = 0;
@@ -685,6 +768,7 @@ public:
       changed_fec = fec;
       changed_tc = tc;
       save_str = "";
+	  my_hash = 0;
    }
 
    int GetCost()
@@ -708,7 +792,7 @@ public:
    int changed_tc;
     //bool visited;
     std::string save_str;
-	
+	uint64_t my_hash;
    
 };
 
