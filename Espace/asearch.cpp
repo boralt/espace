@@ -866,20 +866,24 @@ std::string Algorithm(RunConfig &_rc)
    st.push(head);
    unsigned int loop = 0;
    Node* pPrintedNode = 0;
+	uint64_t stime=Thread::CurrentTimeMsecs();
 
 	while(!st.empty())
    {
       loop++;
-      if (cfg.max_loop && loop >= cfg.max_loop)
-		{
-			cfg.WriteDebug("Algorithm stopping...reached max loop %d\n",loop);
-			break;
-		}
 
       if(loop % 1000 == 0)
       {
-			cfg.WriteDebug("Loop %d Size=%d cost=%d recent=%d leafes=%d visited=%zu ignored=%d pruned=%d\n",
-								 loop, (int) st.size(), min_cost, recent_cost, leafs_reached, visited.size(), visited_ignored, pruned);
+      	uint64_t runtime = Thread::CurrentTimeMsecs()-stime;
+			if (cfg.max_runtime_ms && runtime >= cfg.max_runtime_ms)
+			{
+				cfg.WriteDebug("Algorithm stopping...reached max runtime %d ms\n",loop,runtime);
+				break;
+			}
+
+			cfg.WriteDebug("Loop %d Size=%d cost=%d recent=%d leafes=%d visited=%zu ignored=%d pruned=%d runtime:%d ms\n",
+								 loop, (int) st.size(), min_cost, recent_cost, leafs_reached, visited.size(),
+								 visited_ignored, pruned, runtime);
 			if (pMinCostNode && pMinCostNode != pPrintedNode)
 			{
 				pPrintedNode = pMinCostNode;

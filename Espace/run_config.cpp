@@ -5,12 +5,12 @@
 using namespace std;
 
 RunConfig::RunConfig() :
-	num_channels(0),
-	num_traffic_classes(0),
-	num_fec(0), 
-	try_chunk(0),
-	debug_server(NULL),
-	max_loop(0)
+		  num_channels(0),
+		  num_traffic_classes(0),
+		  num_fec(0),
+		  try_chunk(0),
+		  debug_server(NULL),
+		  max_runtime_ms(0)
 {
 
 }
@@ -116,6 +116,7 @@ bool RunConfig::ParseJson(std::string &json)
 
 	// set the size values
 	try_chunk = root["try_chunk"].asInt();
+	max_runtime_ms = root["max_runtime_ms"].asInt();
 	num_traffic_classes = Treq.size();
 	num_fec = FecMult.size();
 	num_channels = LofC.size();

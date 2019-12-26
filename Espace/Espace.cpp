@@ -78,7 +78,6 @@ public:
 		}
 
 		// Run the algorithm
-		//cfg.max_loop = 40000; // temp fpr faster testing
 		start_ts=CurrentTimeMsecs();
 		tJson=Algorithm(cfg);
 		end_ts=CurrentTimeMsecs();

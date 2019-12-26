@@ -20,7 +20,7 @@ public:
 	unsigned int num_traffic_classes;
 	unsigned int num_fec;
 	unsigned int try_chunk;     // quanta of traffc allocation
-	unsigned int max_loop;
+	unsigned int max_runtime_ms;
 
 	std::vector<int> LofC;		// latency of channel
 	std::vector<int> JofC;		// jitter of channel

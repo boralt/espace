@@ -1,4 +1,5 @@
 {
+  "max_runtime_ms": 5000,
   "try_chunk": 1000,
   "channels":[
     {"latency_ms":2000,"jitter_ms":600,"bw_kbps":9000000,"drop_percent":1000},
