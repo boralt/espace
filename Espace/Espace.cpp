@@ -92,7 +92,7 @@ public:
 		ResultJson+="}";
 
 		// Add response to response queue
-		ResponsePush(ResultJson);
+		ResponsePush(ResultJson,cfg.session_id);
 
 		cfg.WriteDebug("Min Cost = %d\n", min_cost);
 		cfg.WriteDebug("Json Result:\n %s\n",ResultJson.c_str());
@@ -101,10 +101,6 @@ public:
 	void SetDebugServer(WebServer *ws)
 	{
 		mWsDebug=ws;
-
-
-
-
 	}
 
 private:

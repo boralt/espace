@@ -8,10 +8,10 @@ WorkerQueue::WorkerQueue()
 
 WorkerQueue::~WorkerQueue()
 {
-
+	// TODO: free map queues
 }
 
-int WorkerQueue::Size(std::queue<std::string> *q)
+int WorkerQueue::Size(WQueue_t *q)
 {
 	int sz=0;
 	Lock();
@@ -20,21 +20,21 @@ int WorkerQueue::Size(std::queue<std::string> *q)
 	return sz;
 }
 
-void WorkerQueue::Pop(std::queue<std::string> *q)
+void WorkerQueue::Pop(WQueue_t *q)
 {
 	Lock();
 	q->pop();
 	Unlock();
 }
 
-void WorkerQueue::Push(std::queue<std::string> *q, std::string json)
+void WorkerQueue::Push(WQueue_t *q, std::string json)
 {
 	Lock();
 	q->push(json);
 	Unlock();
 }
 
-bool WorkerQueue::Peek(std::queue<std::string> *q, std::string &json, int msecs)
+bool WorkerQueue::Peek(WQueue_t *q, std::string &json, int msecs)
 {
 	bool rc=false;
 
@@ -88,26 +88,42 @@ uint64_t WorkerQueue::TotalRequests()
 	return mTotalRequests;
 }
 
-int WorkerQueue::ResponseQueueSize()
+int WorkerQueue::ResponseQueueSize( std::string session_id)
 {
-	return Size(&mResponseQueue);
+	int sz=0;
+	if (mRespQMap.find(session_id) != mRespQMap.end())
+	{
+		sz = Size(mRespQMap[session_id]);
+	}
+	return sz;
 }
 
-void WorkerQueue::ResponsePop()
+void WorkerQueue::ResponsePop( std::string session_id)
 {
-	Pop(&mResponseQueue);
+	if (mRespQMap.find(session_id) != mRespQMap.end())
+	{
+		Pop(mRespQMap[session_id]);
+	}
 }
 
 
-bool WorkerQueue::ResponsePeek(std::string &json, int msecs)
+bool WorkerQueue::ResponsePeek(std::string &json, int msecs,  std::string session_id)
 {
-	return Peek(&mResponseQueue,json,msecs);
+	if (mRespQMap.find(session_id) != mRespQMap.end())
+	{
+		return Peek(mRespQMap[session_id], json, msecs);
+	}
+	return false;
 }
 
 
-void WorkerQueue::ResponsePush(std::string json)
+void WorkerQueue::ResponsePush(std::string json,  std::string session_id)
 {
-	return Push(&mResponseQueue,json);
+	if (mRespQMap.find(session_id) == mRespQMap.end())
+	{
+		mRespQMap[session_id] = new WQueue_t();
+	}
+	return Push(mRespQMap[session_id], json);
 }
 
 void WorkerQueue::Run()

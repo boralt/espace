@@ -100,13 +100,21 @@ int WebServer::HandleRequest(sb_Event *e)
 			{
 				int c=0;
 				std::string json,json2,result;
+
+				printf("path:[%s]\n",e->path);
+
+				char sidstr[64]={0};
+				sb_get_var(e->stream,"session_id",sidstr,63);
+
+				printf("sid:[%s]\n",sidstr);
+
 				json = "\"results\":[";
-				while (mWq->ResponsePeek(json2, 0))
+				while (mWq->ResponsePeek(json2, 0, sidstr))
 				{
 					json+=json2;
 					json += ",";
 					c++;
-					mWq->ResponsePop();
+					mWq->ResponsePop(sidstr);
 				}
 				if (c)
 				{
@@ -114,7 +122,7 @@ int WebServer::HandleRequest(sb_Event *e)
 				}
 				json+="]}";
 				result="{\"num_results\":"+std::to_string(c)+",";
-				result+="\"num_pending\":"+std::to_string(mWq->RequestQueueSize()+mWq->ResponseQueueSize())+",";
+				result+="\"num_pending\":"+std::to_string(mWq->ResponseQueueSize(sidstr))+",";
 				result+="\"total_requests\":"+std::to_string(mWq->TotalRequests())+",";
 				result+=json;
 				sb_writef(e->stream, result.c_str());
