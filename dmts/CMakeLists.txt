@@ -1,15 +1,15 @@
-cmake_minimum_required(VERSION 3.10)
-project(espace)
+cmake_minimum_required(VERSION 3.1)
+project(dmts)
 
 set(CMAKE_CXX_STANDARD 14)
 
-include_directories(Espace)
+include_directories(dmts)
 include_directories(json/json)
 include_directories(sandbird/src)
 
-configure_file(Espace/config.json ${CMAKE_CURRENT_BINARY_DIR})
+configure_file(config.json ${CMAKE_CURRENT_BINARY_DIR})
 
-add_executable(espace
+add_executable(dmts
         Espace/asearch.cpp
         Espace/Espace.cpp
         Espace/run_config.cpp
