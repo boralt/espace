@@ -101,12 +101,8 @@ int WebServer::HandleRequest(sb_Event *e)
 				int c=0;
 				std::string json,json2,result;
 
-				printf("path:[%s]\n",e->path);
-
 				char sidstr[64]={0};
 				sb_get_var(e->stream,"session_id",sidstr,63);
-
-				printf("sid:[%s]\n",sidstr);
 
 				json = "\"results\":[";
 				while (mWq->ResponsePeek(json2, 0, sidstr))
