@@ -117,6 +117,7 @@ bool RunConfig::ParseJson(std::string &json)
 	// set the size values
 	try_chunk = root["try_chunk"].asInt();
 	max_runtime_ms = root["max_runtime_ms"].asInt();
+	session_id = root["session_id"].asString();
 	num_traffic_classes = Treq.size();
 	num_fec = FecMult.size();
 	num_channels = LofC.size();
