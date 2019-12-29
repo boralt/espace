@@ -1,7 +1,7 @@
 {
   "max_runtime_ms": 5000,
   "try_chunk": 1000,
-  "session_id":"1234",
+  "session_id":"",
   "channels":[
     {"latency_ms":2000,"jitter_ms":600,"bw_kbps":9000000,"drop_percent":1000},
     {"latency_ms":100,"jitter_ms":30,"bw_kbps":10000,"drop_percent":1},

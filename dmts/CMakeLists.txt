@@ -7,7 +7,7 @@ include_directories(dmts)
 include_directories(json/json)
 include_directories(sandbird/src)
 
-configure_file(config.json ${CMAKE_CURRENT_BINARY_DIR})
+configure_file(Espace/config.json ${CMAKE_CURRENT_BINARY_DIR})
 
 add_executable(dmts
         Espace/asearch.cpp
@@ -29,9 +29,9 @@ add_executable(dmts
 
 find_package(Threads REQUIRED)
 if(THREADS_HAVE_PTHREAD_ARG)
-  target_compile_options(espace PUBLIC "-pthread")
+  target_compile_options(dmts PUBLIC "-pthread")
 endif()
 if(CMAKE_THREAD_LIBS_INIT)
-  target_link_libraries(espace "${CMAKE_THREAD_LIBS_INIT}")
+  target_link_libraries(dmts "${CMAKE_THREAD_LIBS_INIT}")
 endif()
 
