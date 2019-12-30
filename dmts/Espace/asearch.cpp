@@ -97,7 +97,7 @@ Node *pMinCostNode = 0;
 void Init(RunConfig &_rc)
 {
 	cfg=_rc;
-	// min_cost=0;
+	min_cost=0; // need this cleared for re-entry
 	recent_cost=0;
 	leafs_reached=0;
 	visited_ignored=0;

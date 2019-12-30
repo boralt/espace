@@ -52,6 +52,7 @@ WebServer::WebServer(const char *port, WorkerQueue *wq)
 	{
 		mUseDataBuffer=true;
 	}
+	mMaxDbLen = (1024*1024);
 }
 
 void WebServer::Init(const char* port)
@@ -84,7 +85,8 @@ int WebServer::HandleRequest(sb_Event *e)
 			// dump data buffer
 			sb_send_header(e->stream, "Content-Type", "text/plain");
 			sb_send_status(e->stream, 200, "OK");
-			sb_writef(e->stream, "Espace Simulator: %s\n\n",ctime(&now));
+			sb_writef(e->stream, "--- Espace Simulator Debug Server ---\nDataBufferLength: %d bytes of %d max bytes (truncates oldest)\n%s",
+						 mDataBuffer.length(),mMaxDbLen,ctime(&now));
 			sb_writef(e->stream,mDataBuffer.c_str());
 		}
 		else // using message queue
@@ -136,5 +138,18 @@ void WebServer::SetDataBuffer(std::string data)
 void WebServer::AppendDataBuffer(std::string data)
 {
 	mDataBuffer += data;
+	if (mDataBuffer.length() > mMaxDbLen)
+	{
+		mDataBuffer.erase(0,mDataBuffer.length() - mMaxDbLen);
+	}
+}
+
+void WebServer::SetDataBufferMaxLen(int len)
+{
+	if (len<512)
+	{
+		len=512;
+	}
+	mMaxDbLen=len;
 }
 

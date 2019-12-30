@@ -24,6 +24,7 @@ public:
 	// only available if databuffer constructor is used
 	void AppendDataBuffer(std::string data);
 	void SetDataBuffer(std::string data);
+	void SetDataBufferMaxLen(int len);
 
 	void Run();
 
@@ -37,5 +38,6 @@ private:
 	int          mCalled;
 	bool         mUseDataBuffer;
 	std::string  mDataBuffer;
+	int          mMaxDbLen;
 };
 
