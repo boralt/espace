@@ -72,6 +72,9 @@ void WebServer::Init(const char* port)
 	}
 }
 
+// curl -d "@config.json" -H 'Expect:' -X POST http://localhost:7777
+// curl  -X GET "http://localhost:7777/?session_id=1234&limit=20"
+
 int WebServer::HandleRequest(sb_Event *e)
 {
 	mCalled++;
@@ -100,11 +103,14 @@ int WebServer::HandleRequest(sb_Event *e)
 			}
 			else // GET
 			{
-				int c=0;
+				int c=0,limit=0;
 				std::string json,json2,result;
 
 				char sidstr[64]={0};
+				char limitstr[16]={0};
 				sb_get_var(e->stream,"session_id",sidstr,63);
+				sb_get_var(e->stream,"limit",limitstr,15);
+				limit = atoi(limitstr);
 
 				json = "\"results\":[";
 				while (mWq->ResponsePeek(json2, 0, sidstr))
@@ -113,6 +119,10 @@ int WebServer::HandleRequest(sb_Event *e)
 					json += ",";
 					c++;
 					mWq->ResponsePop(sidstr);
+					if (limit && c >= limit)
+					{
+						break;
+					}
 				}
 				if (c)
 				{
