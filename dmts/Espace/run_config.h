@@ -31,10 +31,13 @@ public:
 	std::vector<int> FecMult;   // FEC bw efficiency multiplier
 	std::vector<int> FecDiv;	// FEC drop divider
 
-	std::vector<int> Treq;      // Traffic bw requirements
-	std::vector<int> tcJitterCost; // cost of jitter for traffic claass
+	std::vector<int> Treq;          // Traffic CIR bw requirements
+	std::vector<int> TreqMIR;       // Traffic MIR bw requirements
+	std::vector<int> TreqCIRCost;   // Traffic MIR bw requirements
+	std::vector<int> TreqMIRCost;   // Traffic MIR bw requirements
+	std::vector<int> tcJitterCost;  // cost of jitter for traffic claass
 	std::vector<int> tcLatencyCost; // cost of latency 
-	std::vector<int> tcDropCost;	// cost of packet drop
+	std::vector<int> tcDropCost;	  // cost of packet drop
 
 	// Debug output
 	void WriteDebug(std::string str);

@@ -73,12 +73,33 @@ bool RunConfig::ParseJson(std::string &json)
 		}
 		tcLatencyCost.push_back(cat[x]["latency_cost"].asInt());
 
-		if (cat[x]["bw_kbps"].empty())
+		if (cat[x]["bw_cir_kbps"].empty())
 		{
-			cout << "Expecting 'traffic_classes:bw_kbps'" << endl;
+			cout << "Expecting 'traffic_classes:bw_cir_kbps'" << endl;
 			return false;
 		}
-		Treq.push_back(cat[x]["bw_kbps"].asInt());
+		Treq.push_back(cat[x]["bw_cir_kbps"].asInt());
+
+		if (cat[x]["bw_mir_kbps"].empty())
+		{
+			cout << "Expecting 'traffic_classes:bw_mir_kbps'" << endl;
+			return false;
+		}
+		TreqMIR.push_back(cat[x]["bw_mir_kbps"].asInt());
+
+		if (cat[x]["bw_cir_cost"].empty())
+		{
+			cout << "Expecting 'traffic_classes:bw_cir_cost'" << endl;
+			return false;
+		}
+		TreqCIRCost.push_back(cat[x]["bw_cir_cost"].asInt());
+
+		if (cat[x]["bw_mir_cost"].empty())
+		{
+			cout << "Expecting 'traffic_classes:bw_mir_cost'" << endl;
+			return false;
+		}
+		TreqMIRCost.push_back(cat[x]["bw_mir_cost"].asInt());
 
 		if (cat[x]["drop_cost"].empty())
 		{
