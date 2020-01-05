@@ -1,5 +1,5 @@
 {
-  "max_runtime_ms": 5000,
+  "max_runtime_ms": 120000,
   "try_chunk": 1000,
   "session_id":"",
   "channels":[
