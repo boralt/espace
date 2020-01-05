@@ -167,7 +167,7 @@ int main()
 extern int min_cost;
 int main()
 {
-	min_cost = 23000;
+    min_cost = 23000;
 	std::string s;
 	ReadFile(CFG_PATH, s);
 	RequestWork r;

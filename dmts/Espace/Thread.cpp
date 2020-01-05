@@ -95,10 +95,8 @@ uint64_t Thread::CurrentTimeMsecs()
 	gettimeofday(&time, NULL);
 	return time.tv_sec * 1000 + time.tv_usec / 1000;
 #else
-	SYSTEMTIME time;
-	GetSystemTime(&time);
-	LONG time_ms = (time.wSecond * 1000) + time.wMilliseconds;
-	return time_ms;
+    return (clock()/ CLOCKS_PER_SEC) * 1000;
+
 #endif
 
 }
