@@ -15,19 +15,11 @@ RunConfig::RunConfig() :
 
 }
 
-bool RunConfig::ParseJson(std::string &json)
+bool RunConfig::ParseJson(Json::Value &root)
 {
-	Json::Reader reader;
-	Json::Value root;
 	Json::Value cat;
 	std::map<std::string,std::vector<int> *>::iterator it;
 	unsigned int x;
-
-	if (!reader.parse(json, root))
-	{
-		cout << "illegal JSON" << endl;
-		return false;
-	}
 
 	cat = root["channels"];
 	for (x = 0; x < cat.size(); x++)

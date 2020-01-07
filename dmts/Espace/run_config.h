@@ -14,7 +14,7 @@ public:
 
 	RunConfig();
 
-	bool ParseJson(std::string &json);
+	bool ParseJson(Json::Value &root);
 
 	unsigned int num_channels;
 	unsigned int num_traffic_classes;

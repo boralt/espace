@@ -41,7 +41,7 @@ WebServer::~WebServer()
 {
 }
 
-WebServer::WebServer(const char *port, WorkerQueue *wq)
+WebServer::WebServer(const char *port, WorkerQueue *wq, ResultsDb *resultsDb)
 {
 	Init(port);
 	if (wq)
@@ -52,6 +52,7 @@ WebServer::WebServer(const char *port, WorkerQueue *wq)
 	{
 		mUseDataBuffer=true;
 	}
+	mResultsDb = resultsDb;
 	mMaxDbLen = (1024*1024);
 }
 
@@ -78,6 +79,7 @@ void WebServer::Init(const char* port)
 int WebServer::HandleRequest(sb_Event *e)
 {
 	mCalled++;
+
 	if (e->type == SB_EV_REQUEST)
 	{
 		// TODO: clean this up
@@ -88,34 +90,54 @@ int WebServer::HandleRequest(sb_Event *e)
 			// dump data buffer
 			sb_send_header(e->stream, "Content-Type", "text/plain");
 			sb_send_status(e->stream, 200, "OK");
-			sb_writef(e->stream, "--- Espace Simulator Debug Server ---\nDataBufferLength: %d bytes of %d max bytes (truncates oldest)\n%s",
-						 mDataBuffer.length(),mMaxDbLen,ctime(&now));
-			sb_writef(e->stream,mDataBuffer.c_str());
+			sb_writef(e->stream,
+						 "--- Espace Simulator Debug Server ---\nDataBufferLength: %d bytes of %d max bytes (truncates oldest)\n%s",
+						 mDataBuffer.length(), mMaxDbLen, ctime(&now));
+			sb_writef(e->stream, mDataBuffer.c_str());
 		}
-		else // using message queue
+		else if (!strncmp(e->method, "POST", 4) && e->content)
 		{
-			//sb_send_header(e->stream, "Content-Type", "text/json");
+			// add to worker request queue
+			mWq->RequestPush(e->content);
 			sb_send_status(e->stream, 200, "OK");
-			if (!strncmp(e->method,"POST",4) && e->content)
+		}
+		else if (!strncmp(e->method, "GET", 4) && e->content)
+		{
+			int         c                   = 0, limit = 0;
+			uint32_t    start_ts            = 0, end_ts = 0;
+			std::string json, json2, result = "{}";
+			// parameters
+			char sidstr[64]     = {0};
+			char starttsstr[64] = {0};
+			char endtsstr[64]   = {0};
+			char limitstr[16]   = {0};
+			sb_get_var(e->stream, "session_id", sidstr, 63);
+			sb_get_var(e->stream, "start_ts", starttsstr, 63);
+			sb_get_var(e->stream, "end_ts", endtsstr, 63);
+			sb_get_var(e->stream, "limit", limitstr, 15);
+
+			limit    = atoi(limitstr);
+			start_ts = atol(starttsstr);
+			end_ts   = atol(endtsstr);
+
+			sb_send_header(e->stream, "Content-Type", "text/json");
+
+			if (strstr(e->path, "/search"))
 			{
-				// add to worker queue
-				mWq->RequestPush(e->content);
+				// search database for matches (non-destructive)
+				if (mResultsDb)
+				{
+					result = mResultsDb->Find(start_ts, end_ts, sidstr, limit);
+				}
+				sb_writef(e->stream, result.c_str());
 			}
-			else // GET
+			else // Get from response queues (destructive)
+
 			{
-				int c=0,limit=0;
-				std::string json,json2,result;
-
-				char sidstr[64]={0};
-				char limitstr[16]={0};
-				sb_get_var(e->stream,"session_id",sidstr,63);
-				sb_get_var(e->stream,"limit",limitstr,15);
-				limit = atoi(limitstr);
-
 				json = "\"results\":[";
 				while (mWq->ResponsePeek(json2, 0, sidstr))
 				{
-					json+=json2;
+					json += json2;
 					json += ",";
 					c++;
 					mWq->ResponsePop(sidstr);
@@ -128,13 +150,17 @@ int WebServer::HandleRequest(sb_Event *e)
 				{
 					json.pop_back(); // remove trailing ","
 				}
-				json+="]}";
-				result="{\"num_results\":"+std::to_string(c)+",";
-				result+="\"num_pending\":"+std::to_string(mWq->ResponseQueueSize(sidstr))+",";
-				result+="\"total_requests\":"+std::to_string(mWq->TotalRequests())+",";
-				result+=json;
+				json += "]}";
+				result = "{\"num_results\":" + std::to_string(c) + ",";
+				result += "\"num_pending\":" + std::to_string(mWq->ResponseQueueSize(sidstr)) + ",";
+				result += "\"total_requests\":" + std::to_string(mWq->TotalRequests()) + ",";
+				result += json;
 				sb_writef(e->stream, result.c_str());
 			}
+		}
+		else
+		{
+			sb_send_status(e->stream, 404, "not supported");
 		}
 	}
 	return SB_RES_OK;

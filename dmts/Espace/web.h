@@ -7,6 +7,7 @@
 #include <cstdint>
 #include "Thread.h"
 #include "WorkerQueue.h"
+#include "ResultsDb.h"
 #include "sandbird.h"
 
 #pragma comment(lib, "Ws2_32.lib")
@@ -17,7 +18,7 @@ public:
 
 	// Webserver
 	// Use wq if set, otherwise use data buffer
-	explicit WebServer(const char *port, WorkerQueue *wq);
+	explicit WebServer(const char *port, WorkerQueue *wq, ResultsDb *resultsDb);
 
 	~WebServer();
 
@@ -34,6 +35,7 @@ private:
 	void Init(const char* port);
 	sb_Server   *mServer;
 	WorkerQueue *mWq;
+	ResultsDb   *mResultsDb;
 	sb_Options   mOptions;
 	int          mCalled;
 	bool         mUseDataBuffer;

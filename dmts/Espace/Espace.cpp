@@ -9,6 +9,7 @@
 #include <fstream>
 
 #include "Mutex.h"
+#include "ResultsDb.h"
 #include "run_config.h"
 #include "web.h"
 #include "WorkerQueue.h"
@@ -49,53 +50,71 @@ bool ReadFile(std::string filepath,  std::string &json)
 class RequestWork : public WorkerQueue
 {
 public:
-	RequestWork()
+	RequestWork(ResultsDb *resultsDb)
 	{
 		mWsDebug=NULL;
 		mCount=0;
+		mResultsDb = resultsDb;
 	};
 
 	~RequestWork(){};
 
 	void DoWork(std::string &json)
 	{
-		RunConfig cfg;
-		std::string ResultJson;
-		std::string tJson;
-		char tbuf[256];
-		uint64_t start_ts,end_ts;
+		Json::Reader reader;
+		Json::Value  root;
+		Json::Value  cat;
+		unsigned int x;
 
-		cfg.debug_server = mWsDebug;
-
-		mCount++;
-		cfg.WriteDebug("\n\n----------------Request %d ----------------------\n",mCount);
-		cfg.WriteDebug("Json Request:\n %s\n\n",json.c_str());
-
-		if (!cfg.ParseJson(json))
+		if (!reader.parse(json, root))
 		{
-			cfg.WriteDebug("Could not parse json\n");
+			printf("ERROR: Could not parse json...expecting array\n");
 			return;
 		}
 
-		// Run the algorithm
-		start_ts=CurrentTimeMsecs();
-		tJson=Algorithm(cfg);
-		end_ts=CurrentTimeMsecs();
+		cat    = root["requests"];
+		for (x = 0; x < cat.size(); x++)
+		{
+			std::string ResultJson;
+			std::string tJson;
+			char        tbuf[256];
+			uint64_t    start_ts, end_ts;
+			RunConfig   cfg;
 
-		// Build JSON response
-		ResultJson="{";
-		snprintf(tbuf,255,"%llu.%03llu",end_ts/1000,end_ts%1000);
-		ResultJson+="\"result_ready_time\":"+string(tbuf)+",";
-		ResultJson+="\"processing_time_ms\":"+std::to_string(end_ts-start_ts)+",";
-		ResultJson+="\"request\":"+json+",";
-		ResultJson+="\"result\":"+tJson;
-		ResultJson+="}";
+			cfg.debug_server = mWsDebug;
+			mCount++;
+			cfg.WriteDebug("\n\n----------------Request %d ----------------------\n", mCount);
+			//cfg.WriteDebug("Json Request:\n %s\n\n", cat[x].c_str());
 
-		// Add response to response queue
-		ResponsePush(ResultJson,cfg.session_id);
+			if (!cfg.ParseJson(cat[x]))
+			{
+				cfg.WriteDebug("Could not parse json\n");
+				return;
+			}
 
-		cfg.WriteDebug("Min Cost = %d\n", min_cost);
-		cfg.WriteDebug("Json Result:\n %s\n",ResultJson.c_str());
+			// Run the algorithm
+			start_ts = CurrentTimeMsecs();
+			tJson    = Algorithm(cfg);
+			end_ts   = CurrentTimeMsecs();
+
+			// Build JSON response
+			ResultJson = "{";
+			snprintf(tbuf, 255, "%llu.%03llu", end_ts / 1000, end_ts % 1000);
+			ResultJson += "\"result_ready_time\":" + string(tbuf) + ",";
+			ResultJson += "\"processing_time_ms\":" + std::to_string(end_ts - start_ts) + ",";
+			ResultJson += "\"request\":" + json + ",";
+			ResultJson += "\"result\":" + tJson;
+			ResultJson += "}";
+
+			// add to DB
+			mResultsDb->Add(ResultJson, cfg.session_id);
+
+			// Add response to response queue
+			ResponsePush(ResultJson, cfg.session_id);
+
+			cfg.WriteDebug("Min Cost = %d\n", min_cost);
+			cfg.WriteDebug("Json Result:\n %s\n", ResultJson.c_str());
+		}
 	}
 
 	void SetDebugServer(WebServer *ws)
@@ -104,6 +123,7 @@ public:
 	}
 
 private:
+	ResultsDb *mResultsDb;
 	WebServer *mWsDebug;
 	int mCount;
 };
@@ -113,12 +133,12 @@ private:
 int main()
 {
 	char buf[256];
-
-	RequestWork wq;
+	ResultsDb resultsDb;
+	RequestWork wq(&resultsDb);
 	// used for official GET/POST of JSON data
-	WebServer  ws(WEB_SERVER_PORT,&wq);
+	WebServer  ws(WEB_SERVER_PORT,&wq,&resultsDb);
 	// second web server for debug output only
-	WebServer  wsDebug(WEB_SERVER_PORT_DEBUG,NULL);
+	WebServer  wsDebug(WEB_SERVER_PORT_DEBUG,NULL, NULL);
 
 	wq.SetDebugServer(&wsDebug);
 
