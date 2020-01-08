@@ -21,6 +21,7 @@ public:
 	unsigned int num_fec;
 	unsigned int try_chunk;     // quanta of traffc allocation
 	unsigned int max_runtime_ms;
+	unsigned int start_ts;
 	std::string  session_id;
 
 	std::vector<int> LofC;		// latency of channel

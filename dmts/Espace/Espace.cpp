@@ -107,7 +107,7 @@ public:
 			ResultJson += "}";
 
 			// add to DB
-			mResultsDb->Add(ResultJson, cfg.session_id);
+			mResultsDb->Add(ResultJson, cfg.session_id, cfg.start_ts);
 
 			// Add response to response queue
 			ResponsePush(ResultJson, cfg.session_id);

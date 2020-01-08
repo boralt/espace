@@ -131,6 +131,7 @@ bool RunConfig::ParseJson(Json::Value &root)
 	try_chunk = root["try_chunk"].asInt();
 	max_runtime_ms = root["max_runtime_ms"].asInt();
 	session_id = root["session_id"].asString();
+	start_ts = root["start_ts"].asUInt();
 	num_traffic_classes = Treq.size();
 	num_fec = FecMult.size();
 	num_channels = LofC.size();

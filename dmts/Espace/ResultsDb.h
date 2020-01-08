@@ -17,10 +17,15 @@ public:
 	{
 	}
 
-	void Add(std::string json, std::string sess_id)
+	void Add(std::string json, std::string sess_id, time_t start_ts)
 	{
+		if (!start_ts)
+		{
+			start_ts = time(0);
+		}
+
 		mMutex.Lock();
-		mTimestamps.push_back(time(0));
+		mTimestamps.push_back(start_ts);
 		mSessionId.push_back(sess_id);
 		mJson.push_back(json);
 
