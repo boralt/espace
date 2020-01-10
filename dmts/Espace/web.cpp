@@ -89,6 +89,8 @@ int WebServer::HandleRequest(sb_Event *e)
 			time(&now);
 			// dump data buffer
 			sb_send_header(e->stream, "Content-Type", "text/plain");
+			sb_send_header(e->stream, "Access-Control-Allow-Origin", "*");
+			sb_send_header(e->stream, "Access-Control-Allow-Headers", "content-type");
 			sb_send_status(e->stream, 200, "OK");
 			sb_writef(e->stream,
 						 "--- Espace Simulator Debug Server ---\nDataBufferLength: %d bytes of %d max bytes (truncates oldest)\n%s",
@@ -99,6 +101,8 @@ int WebServer::HandleRequest(sb_Event *e)
 		{
 			// add to worker request queue
 			mWq->RequestPush(e->content);
+			sb_send_header(e->stream, "Access-Control-Allow-Origin", "*");
+			sb_send_header(e->stream, "Access-Control-Allow-Headers", "content-type");
 			sb_send_status(e->stream, 200, "OK");
 		}
 		else if (!strncmp(e->method, "GET", 4) && e->content)
@@ -119,7 +123,8 @@ int WebServer::HandleRequest(sb_Event *e)
 			limit    = atoi(limitstr);
 			start_ts = atol(starttsstr);
 			end_ts   = atol(endtsstr);
-
+			sb_send_header(e->stream, "Access-Control-Allow-Origin", "*");
+			sb_send_header(e->stream, "Access-Control-Allow-Headers", "content-type");
 			sb_send_header(e->stream, "Content-Type", "text/json");
 
 			if (strstr(e->path, "/search"))
@@ -188,4 +193,5 @@ void WebServer::SetDataBufferMaxLen(int len)
 	}
 	mMaxDbLen=len;
 }
+
 
