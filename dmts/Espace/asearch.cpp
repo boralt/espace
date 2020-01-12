@@ -93,6 +93,7 @@ int pruned = 0;
 
 class Node;
 Node* pMinCostNode = 0;
+Node* pBaseNode = 0; 
 
 // Init global data so algorithm can be run multiple times
 // TODO: this should all be in a class
@@ -364,10 +365,10 @@ public:
         
     }
 
-    void DeAllocateChunk(int chunk, int ch, int fec)
+    int  DeAllocateChunk(int chunk, int ch, int fec)
     {
         if (!bc[ch][fec])
-            return; // nothing to do
+            return 0; // nothing to do
 
         if (chunk > bc[ch][fec])
             chunk = bc[ch][fec];
@@ -380,7 +381,7 @@ public:
         jitter = 0;
         latency = 0;
         nTotal = 0;
-
+        return chunk;
     }
 
 #
@@ -752,6 +753,148 @@ public:
         return n;
     }
 
+    // check if moving traffic as specified is beneficial (lower cost)
+    int QuickBwChangeCalc(int tc, int chFrom, int fecFrom, int chTo, int fecTo)
+    {
+        int dFrom = D(chFrom);
+        dFrom /=  cfg.FecDiv[fecFrom];
+        int lFrom = L(chFrom);
+        int jFrom = J(chFrom);
+        if (dFrom)
+        {
+            jFrom = max(jFrom, lFrom);
+            lFrom *= 2;            
+        }
+
+        int dTo = D(chTo);
+        dTo /= cfg.FecDiv[fecTo];
+        int lTo = L(chTo);
+        int jTo = J(chTo);
+        if (dTo)
+        {
+            jTo = max(jTo, lTo);
+            lTo *= 2;            
+        }
+
+        return (jFrom - jTo)* cfg.tcJitterCost[tc] + (lFrom - lTo) * cfg.tcLatencyCost[tc] + (dFrom - dTo) * cfg.tcDropCost[tc];       
+    }
+
+    int PopulateNeighbours2(stack<Node*>& st)
+    {
+        bool bHadPruned = 0;
+        int n = 0;
+
+        for (int tcFrom = 0; tcFrom < cfg.num_traffic_classes; tcFrom++)
+        {
+            // for(int ch = 1; ch < cfg.num_channels; ch++)
+            for (int chFrom = cfg.num_channels - 1; chFrom > 0; chFrom--)
+            {
+                for (int fecFrom = 0; fecFrom < cfg.num_fec; fecFrom++)
+                {
+                    if (!GetAllocation(tcFrom, chFrom, fecFrom))
+                        continue;
+
+                    // tcTo = -1 means unallocated space
+                    int tcTo = 0;
+                    
+                    for (tcTo=-1; tcTo < (int) cfg.num_traffic_classes; tcTo++)
+                    { 
+                        if (tcTo == tcFrom)
+                            continue;
+
+                        for (int chTo = cfg.num_channels - 1; chTo > 0; chTo--)
+                        {
+                            if (tcTo == -1 && ChFull(chTo))
+                                continue;
+
+                            for (int fecTo = 0; fecTo < cfg.num_fec; fecTo++)
+                            {
+                                if (chFrom == chTo && fecTo <= fecFrom && tcTo == -1)
+                                    continue;
+
+                                if (tcTo != -1 && !GetAllocation(tcTo, chTo, fecTo))
+                                    continue;
+                                int changeFromAdvantage = QuickBwChangeCalc(tcFrom, chFrom, fecFrom, chTo, fecTo);
+                                int changeToAdvantage = 0;
+                                if(tcTo != -1)
+                                    changeToAdvantage = QuickBwChangeCalc(tcTo, chTo, fecTo, chFrom, fecFrom);
+
+                                if ((changeFromAdvantage + changeToAdvantage) > 0)
+                                {
+                                    // int try_chunk = ((cfg.Treq[tc] / 3 + cfg.try_chunk - 1) / cfg.try_chunk) * cfg.try_chunk;
+                                    int try_chunk = cfg.try_chunk;
+
+                                    Node* pNode = new Node(*this);
+                                    int available_chunk_from = pNode->DeAllocateChunk(tcFrom, try_chunk, chFrom, fecFrom);
+
+                                    if (!available_chunk_from)
+                                    {
+                                        delete pNode;
+                                        continue;
+                                    }
+
+                                    int available_chunk_to = 0;
+                                    if (tcTo != -1)
+                                    {
+                                        available_chunk_to = pNode->DeAllocateChunk(tcTo, try_chunk, chTo, fecTo);
+                                        if (!available_chunk_to)
+                                        {
+                                            delete pNode;
+                                            continue;
+                                        }
+                                    }
+
+                                    if (!pNode->AllocateChunk(tcFrom, available_chunk_from, chTo, fecTo))
+                                    {
+                                        delete pNode;
+                                        continue;
+                                    }
+
+                                    
+                                    if (available_chunk_to && !pNode->AllocateChunk(tcTo, available_chunk_to, chFrom, fecFrom))
+                                    {
+                                        delete pNode;
+                                        continue;
+                                    }
+
+                                    if (pNode->IsVisited())
+                                    {
+                                        delete pNode;
+                                        visited_ignored++;
+                                        continue;
+                                    }
+                                    pNode->SetVisited();
+
+                                    st.push(pNode);
+                                    int cost = pNode->GetCost();
+                                    if (cost < min_cost)
+                                    {
+                                        delete pMinCostNode;
+                                        pMinCostNode = new Node(*pNode);
+                                        min_cost = cost;
+                                    }
+
+                                    if (recent_cost == 0 || cost < recent_cost)
+                                    {
+                                        recent_cost = cost;
+                                    }
+                                }
+                            }
+                        }
+
+                    }
+                }
+
+
+
+            }
+
+        }
+    
+        return n;
+    }
+
+
     int CalcHeristic2()
     {
         Node heristicNode(*this);
@@ -970,8 +1113,24 @@ public:
         return chBw >= cfg.BoC[ch];
     }
 
+    int GetAllocation(int tc, int ch, int fec)
+    {
+        return tcs[tc].bc[ch][fec];
+    }
 
-    void AllocateChunk(int tc, int chunk, int ch, int fec)
+    bool ChOver(int ch)
+    {
+        int chBw = 0;
+
+        for (unsigned int tc = 0; tc < cfg.num_traffic_classes; tc++)
+        {
+            chBw += tcs[tc].B(ch);
+        }
+
+        return chBw > cfg.BoC[ch];
+    }
+
+    bool AllocateChunk(int tc, int chunk, int ch, int fec)
     {
         tcs[tc].AllocateChunk(chunk, ch, fec);
         changed_ch = ch;
@@ -979,6 +1138,11 @@ public:
         changed_tc = tc;
         save_str = "";
         my_hash = 0;
+
+        if (ChOver(ch))
+            return false;
+
+        return true;
     }
 
     int TestHeristicChunk(int tc, int chunk, int ch)
@@ -987,14 +1151,15 @@ public:
 
     }
 
-    void DeAllocateChunk(int tc, int chunk, int ch, int fec)
+    int DeAllocateChunk(int tc, int chunk, int ch, int fec)
     {
-        tcs[tc].DeAllocateChunk(chunk, ch, fec);
+        int res = tcs[tc].DeAllocateChunk(chunk, ch, fec);
         changed_ch = ch;
         changed_fec = fec;
         changed_tc = tc;
         save_str = "";
         my_hash = 0;
+        return res;
     }
 
     // returns cost improvement
@@ -1108,7 +1273,7 @@ std::string Algorithm(RunConfig& _rc)
 
     Node* head = new Node;
     stack<Node*> st;
-    st.push(head);
+    
     unsigned int loop = 0;
     Node* pPrintedNode = 0;
     uint64_t stime = Thread::CurrentTimeMsecs();
@@ -1116,7 +1281,10 @@ std::string Algorithm(RunConfig& _rc)
     Node tryNode = Node(*head);
   
     pMinCostNode = tryNode.CalcGreedy();
-    
+    pBaseNode = new Node(*pMinCostNode);
+
+    head = pBaseNode;
+    st.push(head);
     
     min_cost = pMinCostNode->GetCost(true);
  
@@ -1159,7 +1327,7 @@ std::string Algorithm(RunConfig& _rc)
             }
 
             cfg.WriteDebug("Loop %d Size=%d cost=%d recent=%d leafes=%d visited=%zu ignored=%d pruned=%d runtime:%d ms\n",
-                loop, (int)st.size(), min_cost, recent_cost, leafs_reached, visited.size(),
+                loop, (int)st.size(), min_cost, recent_cost, leafs_reached, visited_hashes.size(),
                 visited_ignored, pruned, runtime);
             if (pMinCostNode && pMinCostNode != pPrintedNode)
             {
@@ -1170,18 +1338,20 @@ std::string Algorithm(RunConfig& _rc)
         }
         Node* pNext = st.top();
         st.pop();
-        if (!pNext->IsVisited())
+
+        //if (!pNext->IsVisited())
         {
-            pNext->SetVisited();
-            int newCount = pNext->PopulateNeighbours(st);
+            //pNext->SetVisited();
+            int newCount = pNext->PopulateNeighbours2(st);
             if (newCount == 0)
                 leafs_reached++;
             delete pNext;
         }
-        else
-        {
-            visited_ignored++;
-        }
+        //else
+        //{
+        //    delete pNext;
+        //    visited_ignored++;
+        //}
 
     }
 
