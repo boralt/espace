@@ -170,8 +170,9 @@ int main()
     min_cost = 23000;
 	std::string s;
 	ReadFile(CFG_PATH, s);
-	RequestWork r;
-	r.DoWork(s);
+	ResultsDb resultsDb;
+	RequestWork wq(&resultsDb);
+	wq.DoWork(s);
 	return 0;
 
 }

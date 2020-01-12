@@ -5,6 +5,8 @@
 #include "Mutex.h"
 
 #include <deque>
+#include <string>
+#include <time.h>
 
 class ResultsDb
 {
