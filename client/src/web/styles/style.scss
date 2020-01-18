@@ -4,6 +4,7 @@
 @import "components/loading";
 @import "components/header";
 @import "components/footer";
+@import "components/dashboard";
 
 body {
   padding-top: 3.5em;
@@ -45,4 +46,159 @@ body {
 @keyframes fadeInOut {
   0%, 100% { opacity: 0.2 }
   50% { opacity: 0.7 }
+}
+.content-container{
+  padding:15px;
+}
+.navbar-dark .navbar-nav .nav-link {
+  color:black !important;
+}
+.sidebar-toggle .sidenav-toggle {
+    margin-top: 15px !important;
+}
+.content-container {
+  margin-top: 20px;
+}
+.sidebar-toggle .sidenav-toggle .icon-bar {
+  background-color: #101010 !important;
+}
+.sidebar-toggle {
+  background-color: #fff !important;
+}
+.sidebar-toggle .nav-link.active {
+  background: #bce0f1  !important;
+}
+.sidebar-toggle .nav-link.active, .sidebar-toggle .nav-link:hover {
+  color: #003abc  !important;
+}
+.card-title {
+  font-weight: bold;
+}
+.padding35{
+  padding-left: 35px;
+  padding-right: 35px;
+  text-align: center;
+}
+.padding20{
+  padding-left: 20px;
+  padding-right: 20px;
+  text-align: center;
+}
+.list-group-item {
+  line-height: 15px
+}
+.btnSlider{
+    color: #636363;
+    background-color: #ffffff;
+    border-color: #ffffff;
+    font-size: 14px !important;
+  }
+.btnCustom:active, .btn-secondary:not(:disabled):not(.disabled).active, .show > .btn-secondary.dropdown-toggle {
+    color: #fff;
+    background-color: #167AE6;
+    border-color: #167AE6;
+} 
+.btn-secondary:hover {
+  color: #fff;
+  background-color: #167AE6;
+  border-color: #167AE6;
+} 
+.custDiv{
+  border: 1px solid #7b7b7b;
+  border-radius: 25px;
+  padding:8px;
+}
+.btn-group-vertical > .btn, .btn-group-vertical > .btn-group {
+  width: 220px !important;
+  border: none;
+}
+.btnFocus:focus {
+  box-shadow: 0 0 0 0.2rem rgba(0, 114, 254, 0.5);
+}
+.btnSlider:focus{
+  background-color: #167ae6;
+  color: white;
+  box-shadow: 0 0 0 0.2rem rgba(254, 254, 255, 0.5);
+}
+.configLabel{
+  display: inline-block;
+  margin-bottom: 2px;
+}
+.form-group {
+  margin-bottom: .5rem !important;
+}
+.jumbotron {
+  padding: 1rem 1rem !important;
+  margin-bottom: 0rem !important; 
+  background-color: white;
+  border-radius: 0.3rem;
+}
+.MuiSlider-root {
+  color: #808394 !important;
+}
+.custImg > img  {
+  width: 80% !important;
+  border-radius: calc(0 - 1px);
+}
+.cstBtngrp{
+  width:200px;
+}
+.cstBtngrp > .btn {
+  color: #6c757d;
+  background-color: #ffffff;
+  border-color: #8d8e90;
+}
+ div.cstBtngrp.btn-group.show > div{
+  width:200px;
+}
+.navbar-dark .navbar-nav .nav-link {
+  color: white !important;
+}
+.navbar-brand {
+  position: relative;
+  text-transform: uppercase;
+  letter-spacing: 0px !important; 
+  font-size: 0.9rem;
+}
+.navbar-brand {
+  text-transform: none !important;
+  color: white;
+}
+.cstTitle{
+  color: #5C91FB;
+  font-weight: 500;
+}
+.cstSlider .MuiSlider-track {
+  display: contents;
+}
+.inventoryHead{
+  background-color: #fafafa;
+  padding: 26px;
+  font-size: 30px;
+  font-weight: 700;
+}
+.inventoryBtn{
+  margin: 26px;
+  float: right;
+  border: 2px solid;
+  width:60px;
+}
+#root > div > div > div > div.flex-grow-1 > div > div > div.jumbotron > div > div:nth-child(2) > button > i{
+  font-weight: 600;
+}
+.lead {
+  font-size: 1.25rem;
+  font-weight: 600;
+  padding: 15px;
+}
+.cstListGrp{
+  margin: 15px;
+  border: .05rem solid;
+}
+.cstBadge{
+  float: right;
+  color: rgb(96, 131, 200);
+  background-color: white;
+  padding: 25px;
+  font-size: 25px;
 }

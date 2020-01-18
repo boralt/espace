@@ -4,6 +4,8 @@ import ReactDOM from 'react-dom';
 import { Provider } from 'react-redux';
 import { BrowserRouter as Router } from 'react-router-dom';
 import { PersistGate } from 'redux-persist/es/integration/react';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 import configureStore from '../store/index';
 import * as serviceWorker from './register-service-worker';
@@ -17,6 +19,8 @@ import './styles/style.scss';
 
 const { persistor, store, dispatch } = configureStore();
 // persistor.purge(); // Debug to clear persist
+
+toast.configure();
 
 const Root = () => (
   <Provider store={store}>

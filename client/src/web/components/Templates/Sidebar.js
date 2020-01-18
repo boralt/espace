@@ -14,15 +14,17 @@ const Template = ({ pageTitle, children }) => (
         </Helmet>
 
         <Member Layout={Header} />
-        <Container fluid>
-            <Row>
+        <div className="content">
+            <div className="d-flex">
                 <Sidebar />
-                <Col md="10" sm="9" className="px-sm-5 py-sm-5 ml-sm-auto">
-                    {children}
-                    <Footer />
-                </Col>
-            </Row>
-        </Container>
+                <div className="flex-grow-1">
+                    <div className="content-container">
+                        {children}
+                        <Footer />
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 );
 
@@ -32,7 +34,7 @@ Template.propTypes = {
 };
 
 Template.defaultProps = {
-    pageTitle: 'React App',
+    pageTitle: 'Espace',
 };
 
 export default Template;

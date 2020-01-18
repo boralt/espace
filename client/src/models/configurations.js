@@ -5,6 +5,7 @@ export default {
      *  Initial state
      */
     state: {
+        capacity: initState.capacity,
         channels: initState.channels,
         trafficClasses: initState.trafficClasses,
         fecs: initState.fecs,

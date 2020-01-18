@@ -7,6 +7,21 @@ import TemplateSidebar from '../components/Templates/Sidebar';
 
 // Routes
 import Home from '../components/Home';
+import TrafficDis from '../components/Pages/Traffic-distribution';
+import DataPricing from '../components/Pages/Data-pricing';
+import AppGroup from '../components/Configuration/App-Group';
+import Channel from '../components/Configuration/Channel';
+import Provider from '../components/Configuration/Provider';
+import ChartDemo from '../components/Pages/Chart-demo';
+import ProviderConfig from '../components/Pages/Provider-configuration';
+import ServiceProcurement from '../components/Pages/Service-procurement'; 
+import ChannelDemo from '../components/Pages/channel-demo'; 
+import Inventory from '../components/Pages/Inventory';
+import eSim from '../components/Pages/eSim';
+
+import Blockage from '../components/Reporting/Blockage'
+import Performance from '../components/Reporting/Performance'
+import SlaCredits from '../components/Reporting/SlaCredits'
 
 import RecipesContainer from '../../containers/Recipes';
 import RecipeListingComponent from '../components/Recipe/Listing';
@@ -37,6 +52,126 @@ const Index = () => (
             render={props => (
                 <TemplateSidebar>
                     <Home {...props} />
+                </TemplateSidebar>
+            )}
+        />
+         <Route
+            exact
+            path="/trafficdistrib"
+            render={props => (
+                <TemplateSidebar>
+                    <TrafficDis {...props} />
+                </TemplateSidebar>
+            )}
+        />
+        <Route
+            exact
+            path="/chartdemo"
+            render={props => (
+                <TemplateSidebar>
+                    <ChartDemo {...props} />
+                </TemplateSidebar>
+            )}
+        />
+        <Route
+            exact
+            path="/performance"
+            render={props => (
+                <TemplateSidebar>
+                    <Performance {...props} />
+                </TemplateSidebar>
+            )}
+        />
+        <Route
+            exact
+            path="/ProviderConfig"
+            render={props => (
+                <TemplateSidebar>
+                    <ProviderConfig {...props} />
+                </TemplateSidebar>
+            )}
+        />
+        <Route
+            exact
+            path="/blockage"
+            render={props => (
+                <TemplateSidebar>
+                    <Blockage {...props} />
+                </TemplateSidebar>
+            )}
+        />
+        <Route
+            exact
+            path="/slacredits"
+            render={props => (
+                <TemplateSidebar>
+                    <SlaCredits {...props} />
+                </TemplateSidebar>
+            )}
+        />
+
+        <Route
+            exact
+            path="/procurement"
+            render={props => (
+                <TemplateSidebar>
+                    { <ServiceProcurement {...props} />}
+                </TemplateSidebar>
+            )}
+        />
+        <Route
+            exact
+            path="/inventory"
+            render={props => (
+                <TemplateSidebar>
+                    <Inventory {...props} />
+                </TemplateSidebar>
+            )}
+        />
+        <Route
+            exact
+            path="/eSim"
+            render={props => (
+                <TemplateSidebar>
+                    <eSim {...props} />
+                </TemplateSidebar>
+            )}
+        />
+
+        <Route
+            exact
+            path="/data_pricing"
+            render={props => (
+                <TemplateSidebar>
+                    <DataPricing {...props} />
+                </TemplateSidebar>
+            )}
+        />
+         <Route
+            exact
+            path="/appgroup"
+            render={props => (
+                <TemplateSidebar>
+                    <AppGroup {...props} />
+                </TemplateSidebar>
+            )}
+        />
+         <Route
+            exact
+            path="/channel"
+            render={props => (
+                <TemplateSidebar>
+                    <Channel {...props} />
+                </TemplateSidebar>
+            )}
+        />
+
+         <Route
+            exact
+            path="/provider"
+            render={props => (
+                <TemplateSidebar>
+                    <Provider {...props} />
                 </TemplateSidebar>
             )}
         />
@@ -93,6 +228,14 @@ const Index = () => (
             render={props => (
                 <TemplateSidebar pageTitle="Configurations">
                     <ConfigurationsContainer {...props} Layout={ConfigurationEditor} />
+                </TemplateSidebar>
+            )}
+        />
+         <Route
+            path="/test-channel"
+            render={props => (
+                <TemplateSidebar pageTitle="Channel Data">
+                    <ConfigurationsContainer {...props} Layout={ChannelDemo} />
                 </TemplateSidebar>
             )}
         />

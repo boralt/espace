@@ -21,7 +21,7 @@ Template.propTypes = {
 };
 
 Template.defaultProps = {
-  pageTitle: 'React App',
+  pageTitle: 'Espace',
 };
 
 export default Template;
